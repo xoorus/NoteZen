@@ -1,4 +1,4 @@
-package com.bchev.notezen.app;
+package com.bchev.notezen.core;
 
 public class ReviewReply {
     public String comment;

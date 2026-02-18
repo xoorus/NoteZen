@@ -1,6 +1,6 @@
-package com.bchev.notezen.web.google.DTO;
+package com.bchev.notezen.core;
 
-public class ReviewerDTO {
+public class Reviewer {
     public String displayName;
     public String profilePhotoUrl;
     public boolean isAnonymous;

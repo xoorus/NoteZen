@@ -1,8 +1,8 @@
-package com.bchev.notezen.web.google.api;
+package com.bchev.notezen.application.google.web;
 
 
-import com.bchev.notezen.app.ReviewManager;
-import com.bchev.notezen.web.google.DTO.ReviewDTO;
+import com.bchev.notezen.core.ReviewManager;
+import com.bchev.notezen.application.google.web.DTO.ReviewDTO;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

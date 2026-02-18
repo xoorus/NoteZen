@@ -1,4 +1,4 @@
-package com.bchev.notezen.app;
+package com.bchev.notezen.core;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

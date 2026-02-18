@@ -1,4 +1,4 @@
-package com.bchev.notezen.web.google.DTO;
+package com.bchev.notezen.application.google.web.DTO;
 
 public enum StarRatingDTO {
     STAR_RATING_UNSPECIFIED, ONE, TWO, THREE, FOUR, FIVE
