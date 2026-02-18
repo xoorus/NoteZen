@@ -14,16 +14,24 @@ spring:
       enabled: true
       settings:
         web-allow-others: true
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - openid
+              - profile
+              - email
+              - https://www.googleapis.com/auth/business.manage  # LE SCOPE CRUCIAL
+            redirect-uri: "{baseUrl}/login/oauth2/code/google"
 
 
   application:
     name: NoteZen
 
 jwt:
-  secret: "ceci_est_un_test_pour_un_secret_jwt123TEST_"
-
-google:
-  client-id: gt
-  redirect-uri: r
-  client-secret: f
+  secret: ${JWT_SECRET}
 
