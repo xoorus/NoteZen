@@ -1,4 +1,4 @@
-package com.bchev.notezen.application.google.web.DTO;
+package com.bchev.notezen.application.web.noteZen.DTO;
 
 public class ReviewReplyDTO {
     public String comment;

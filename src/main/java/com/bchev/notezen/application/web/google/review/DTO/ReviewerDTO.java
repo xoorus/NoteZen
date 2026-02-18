@@ -1,4 +1,4 @@
-package com.bchev.notezen.application.google.web.DTO;
+package com.bchev.notezen.application.web.google.review.DTO;
 
 public class ReviewerDTO {
     public String displayName;

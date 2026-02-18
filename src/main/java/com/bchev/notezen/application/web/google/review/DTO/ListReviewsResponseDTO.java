@@ -1,7 +1,10 @@
-package com.bchev.notezen.application.google.web.DTO;
+package com.bchev.notezen.application.web.google.review.DTO;
+
+import lombok.Getter;
 
 import java.util.List;
 
+@Getter
 public class ListReviewsResponseDTO {
     public List<ReviewDTO> reviews;
     public Double averageRating;

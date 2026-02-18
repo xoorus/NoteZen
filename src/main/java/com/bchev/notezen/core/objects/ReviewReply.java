@@ -1,4 +1,4 @@
-package com.bchev.notezen.core;
+package com.bchev.notezen.core.objects;
 
 public class ReviewReply {
     public String comment;

@@ -1,0 +1,29 @@
+spring:
+  # Configuration H2
+  datasource:
+    url: jdbc:h2:mem:googledb
+    driverClassName: org.h2.Driver
+    username: sa
+    password: zeaz
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+  h2:
+    console:
+      enabled: true
+      settings:
+        web-allow-others: true
+
+
+  application:
+    name: NoteZen
+
+jwt:
+  secret: "ceci_est_un_test_pour_un_secret_jwt123TEST_"
+
+google:
+  client-id: gt
+  redirect-uri: r
+  client-secret: f
+
