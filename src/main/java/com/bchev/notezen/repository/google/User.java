@@ -3,6 +3,8 @@ package com.bchev.notezen.repository.google;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "users")
 @Data // Génère getters/setters (Lombok)
@@ -21,8 +23,9 @@ public class User {
     @Column(length = 1000)
     private String googleRefreshToken;
 
-    @Column(length = 100)
     private String googleAccountId;
+
+    private LocalDateTime googleTokenExpiresAt;
 
     private Long expiresAt; // Timestamp d'expiration
 }

@@ -38,8 +38,7 @@ public class GoogleReviewApi {
         ListReviewsResponseDTO ReviewsResponseDTO = restTemplate.exchange(url, HttpMethod.GET, entity, ListReviewsResponseDTO.class).getBody();
         List<ReviewDTO> reviews = ReviewsResponseDTO.getReviews();
 
-        return null;
-        //return reviews.stream().map(ReviewDTO:toReview);
+        return reviews.stream().map(ReviewDTO::toReview).toList();
 
     }
 

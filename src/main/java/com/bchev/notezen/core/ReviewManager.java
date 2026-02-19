@@ -22,10 +22,13 @@ public class ReviewManager {
     }
 
     public List<Review> getReviewsForUser(Long userId, String locationId) {
-        User user = userRepository.findById(userId).orElseThrow();
-        String googleToken = user.getGoogleAccessToken();
-        String googleAccountId = user.getGoogleAccountId();
-        return googleReviewService.getReviewsForUser(googleAccountId, locationId, googleToken);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+        // Cette méthode gère maintenant toute la logique de rafraîchissement
+        String validToken = googleReviewService.getValidToken(user);
+
+        return googleReviewService.getReviewsForUser(user.getGoogleAccountId(), locationId, validToken);
     }
 
 }
