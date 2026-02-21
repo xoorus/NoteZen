@@ -1,6 +1,6 @@
 package com.bchev.notezen.core;
 
-import com.bchev.notezen.core.google.GoogleReviewService;
+import com.bchev.notezen.core.google.GoogleReviewManager;
 import com.bchev.notezen.core.objects.Review;
 import com.bchev.notezen.repository.google.User;
 import com.bchev.notezen.repository.google.UserRepository;
@@ -14,9 +14,9 @@ import java.util.List;
 public class ReviewManager {
 
     UserRepository userRepository;
-    GoogleReviewService googleReviewService;
+    GoogleReviewManager googleReviewService;
 
-    public ReviewManager(UserRepository userRepository, GoogleReviewService googleReviewService) {
+    public ReviewManager(UserRepository userRepository, GoogleReviewManager googleReviewService) {
         this.userRepository = userRepository;
         this.googleReviewService = googleReviewService;
     }

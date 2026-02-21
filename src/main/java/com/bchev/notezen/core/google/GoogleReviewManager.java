@@ -12,13 +12,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
-public class GoogleReviewService {
+public class GoogleReviewManager {
 
     private final UserRepository userRepository;
     private final GoogleAuthService googleAuthService;
     private final GoogleReviewApi googleReviewApi;
 
-    public GoogleReviewService(UserRepository userRepository, GoogleAuthService googleAuthService, GoogleReviewApi googleReviewApi) {
+    public GoogleReviewManager(UserRepository userRepository, GoogleAuthService googleAuthService, GoogleReviewApi googleReviewApi) {
         this.userRepository = userRepository;
         this.googleAuthService = googleAuthService;
         this.googleReviewApi = googleReviewApi;

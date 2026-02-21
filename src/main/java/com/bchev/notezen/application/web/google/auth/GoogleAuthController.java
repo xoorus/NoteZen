@@ -1,6 +1,6 @@
 package com.bchev.notezen.application.web.google.auth;
 
-import com.bchev.notezen.core.google.GoogleReviewService;
+import com.bchev.notezen.core.google.GoogleReviewManager;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class GoogleAuthController {
 
     private final GoogleAuthService googleAuthService;
-    private final GoogleReviewService googleReviewService;
+    private final GoogleReviewManager googleReviewService;
 
-    public GoogleAuthController(GoogleAuthService googleAuthService, GoogleReviewService googleReviewService) {
+    public GoogleAuthController(GoogleAuthService googleAuthService, GoogleReviewManager googleReviewService) {
         this.googleAuthService = googleAuthService;
         this.googleReviewService = googleReviewService;
     }
