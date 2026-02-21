@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class GoogleTokenResponse {
+public class GoogleTokenResponseDTO {
     @JsonProperty("access_token")
     private String accessToken;
     @JsonProperty("expires_in")
@@ -17,4 +17,6 @@ public class GoogleTokenResponse {
     private String scope;
     @JsonProperty("token_type")
     private String tokenType;
+    @JsonProperty("id_token")
+    private String idToken;
 }

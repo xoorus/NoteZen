@@ -1,7 +1,7 @@
 package com.bchev.notezen.core.google;
 
 import com.bchev.notezen.application.web.google.auth.GoogleAuthService;
-import com.bchev.notezen.application.web.google.auth.GoogleTokenResponse;
+import com.bchev.notezen.application.web.google.auth.GoogleTokenResponseDTO;
 import com.bchev.notezen.application.web.google.review.GoogleReviewApi;
 import com.bchev.notezen.core.objects.Review;
 import com.bchev.notezen.repository.google.User;
@@ -28,22 +28,24 @@ public class GoogleReviewManager {
         return googleReviewApi.getReviewsForUser(accountId, locationId, googleToken);
     }
 
-    public void saveTokens(String email, GoogleTokenResponse tokens) {
-        User user = userRepository.findByEmail(email).orElse(new User());
-        user.setEmail(email);
+    public void saveTokens(String email, GoogleTokenResponseDTO tokens, String googleAccountId) {
+        User user = userRepository.findByEmail(email)
+                .orElseGet(() -> {
+                    User newUser = new User();
+                    newUser.setEmail(email);
+                    return newUser;
+                });
+
         user.setGoogleAccessToken(tokens.getAccessToken());
+        user.setGoogleRefreshToken(tokens.getRefreshToken());
+        user.setGoogleAccountId(googleAccountId); // TRÈS IMPORTANT
 
-        // Calcul de l'expiration (souvent fourni en secondes dans 'expires_in')
-        if (tokens.getExpiresIn() > 0) {
-            user.setGoogleTokenExpiresAt(LocalDateTime.now().plusSeconds(tokens.getExpiresIn()));
-        }
-
-        if (tokens.getRefreshToken() != null) {
-            user.setGoogleRefreshToken(tokens.getRefreshToken());
-        }
+        // Calcule la date d'expiration
+        user.setTokenExpiration(LocalDateTime.now().plusSeconds(tokens.getExpiresIn()));
 
         userRepository.save(user);
     }
+
     public String getValidToken(User user) {
         // Vérifie si le token expire dans moins de 5 minutes pour anticiper
         boolean isExpired = user.getGoogleTokenExpiresAt() == null ||

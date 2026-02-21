@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "users")
-@Data // Génère getters/setters (Lombok)
+@Data
 public class User {
 
     @Id
@@ -27,5 +27,5 @@ public class User {
 
     private LocalDateTime googleTokenExpiresAt;
 
-    private Long expiresAt; // Timestamp d'expiration
+    private LocalDateTime tokenExpiration;
 }

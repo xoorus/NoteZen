@@ -20,13 +20,21 @@ public class GoogleAuthController {
     }
 
     @GetMapping("/callback")
-    public ResponseEntity<String> callback(@RequestParam("code") String code, @RequestParam("email") String email) {
-        // 1. Échanger le code contre les tokens
-        GoogleTokenResponse tokens = googleAuthService.exchangeCodeForTokens(code);
+    public ResponseEntity<String> callback(@RequestParam("code") String code) {
+        // 1. On récupère les tokens
+        GoogleTokenResponseDTO tokens = googleAuthService.exchangeCodeForTokens(code);
 
-        // 2. Appeler saveTokens pour enregistrer en base (H2/DB)
-        googleReviewService.saveTokens(email, tokens);
+        // 2. On extrait l'email de l'id_token (JWT)
+        String idToken = tokens.getIdToken();
+        String email = com.auth0.jwt.JWT.decode(idToken).getClaim("email").asString();
 
-        return ResponseEntity.ok("Authentification réussie et tokens sauvegardés !");
+        // 3. On récupère l'ID de compte Google Business
+        String googleAccountId = googleAuthService.getGoogleAccountId(tokens.getAccessToken());
+
+        // 4. On enregistre tout en base
+        // Modifie ta méthode saveTokens pour accepter aussi le googleAccountId
+        googleReviewService.saveTokens(email, tokens, googleAccountId);
+
+        return ResponseEntity.ok("Bravo ! Ton compte " + email + " est lié. Account ID: " + googleAccountId);
     }
 }
