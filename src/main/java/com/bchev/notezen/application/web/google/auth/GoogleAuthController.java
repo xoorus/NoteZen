@@ -26,8 +26,13 @@ public class GoogleAuthController {
 
     @GetMapping("/callback")
     public ResponseEntity<String> callback(@RequestParam("code") String code) {
+
         // 1. On récupère les tokens
         GoogleTokenResponseDTO tokens = googleAuthService.exchangeCodeForTokens(code);
+
+        if (tokens == null || tokens.getIdToken() == null) {
+            return ResponseEntity.internalServerError().body("Erreur : Google n'a pas renvoyé d'ID Token (vérifier les scopes).");
+        }
 
         // 2. On extrait l'email de l'id_token (JWT)
         String idToken = tokens.getIdToken();
@@ -41,16 +46,6 @@ public class GoogleAuthController {
         googleReviewService.saveTokens(email, tokens, googleAccountId);
 
         return ResponseEntity.ok("Bravo ! Ton compte " + email + " est lié. Account ID: " + googleAccountId);
-    }
-
-    @GetMapping("/api/google/locations")
-    public ResponseEntity<List<Map<String, Object>>> getLocations(@AuthenticationPrincipal User user) {
-        // On récupère les tokens de l'utilisateur connecté
-        String accessToken = user.getGoogleAccessToken();
-        String accountId = user.getGoogleAccountId();
-
-        List<Map<String, Object>> locations = googleAuthService.getGoogleLocations(accountId, accessToken);
-        return ResponseEntity.ok(locations);
     }
 
 }
