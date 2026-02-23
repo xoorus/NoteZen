@@ -80,4 +80,21 @@ public class GoogleAuthService {
         GoogleTokenResponseDTO response = restTemplate.postForObject(url, params, GoogleTokenResponseDTO.class);
         return response.getAccessToken();
     }
+
+    public List<Map<String, Object>> getGoogleLocations(String accountId, String accessToken) {
+        // URL format: accounts/{accountId}/locations
+        String url = "https://mybusinessbusinessinformation.googleapis.com/v1/" + accountId + "/locations?readMask=name,title,storeCode";
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
+            return (List<Map<String, Object>>) response.getBody().get("locations");
+        } catch (Exception e) {
+            log.error("Erreur lors de la récupération des établissements", e);
+            return List.of();
+        }
+    }
 }
