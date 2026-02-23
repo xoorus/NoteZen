@@ -1,4 +1,4 @@
-package com.bchev.notezen.application.web.google.review.DTO;
+package com.bchev.notezen.application.web.google.DTO;
 
 import com.bchev.notezen.core.objects.Review;
 import lombok.Getter;

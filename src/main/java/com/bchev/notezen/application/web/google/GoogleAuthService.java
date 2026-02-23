@@ -1,5 +1,6 @@
-package com.bchev.notezen.application.web.google.auth;
+package com.bchev.notezen.application.web.google;
 
+import com.bchev.notezen.application.web.google.DTO.GoogleTokenResponseDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -22,7 +23,7 @@ public class GoogleAuthService {
     private final RestTemplate restTemplate = new RestTemplate();
 
     /**
-     * Étape finale : Échanger le code reçu par le callback contre des tokens
+     * Échange le code d'autorisation reçu contre un ensemble de tokens (access, refresh, id_token).
      */
     public GoogleTokenResponseDTO exchangeCodeForTokens(String code) {
         String url = "https://oauth2.googleapis.com/token";
@@ -36,7 +37,7 @@ public class GoogleAuthService {
         params.add("client_secret", clientSecret);
         params.add("redirect_uri", redirectUri);
         params.add("grant_type", "authorization_code");
-        // IMPORTANT pour avoir le refresh_token lors du premier login
+        // Nécessaire pour obtenir le refresh_token lors de la première connexion
         params.add("access_type", "offline");
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
@@ -44,6 +45,9 @@ public class GoogleAuthService {
         return restTemplate.postForObject(url, request, GoogleTokenResponseDTO.class);
     }
 
+    /**
+     * Récupère l'ID du compte Google Business (format "accounts/123...").
+     */
     public String getGoogleAccountId(String accessToken) {
         String url = "https://mybusinessbusinessinformation.googleapis.com/v1/accounts";
 
@@ -56,7 +60,6 @@ public class GoogleAuthService {
             List<Map<String, Object>> accounts = (List<Map<String, Object>>) response.getBody().get("accounts");
 
             if (accounts != null && !accounts.isEmpty()) {
-                // Retourne le nom du compte (format: "accounts/123456789")
                 return (String) accounts.get(0).get("name");
             }
         } catch (Exception e) {
@@ -66,7 +69,7 @@ public class GoogleAuthService {
     }
 
     /**
-     * Rafraîchir un access_token expiré sans intervention de l'utilisateur
+     * Rafraîchit un access_token expiré en utilisant le refresh_token stocké.
      */
     public String refreshAccessToken(String refreshToken) {
         String url = "https://oauth2.googleapis.com/token";
@@ -78,11 +81,13 @@ public class GoogleAuthService {
         params.add("grant_type", "refresh_token");
 
         GoogleTokenResponseDTO response = restTemplate.postForObject(url, params, GoogleTokenResponseDTO.class);
-        return response.getAccessToken();
+        return response != null ? response.getAccessToken() : null;
     }
 
+    /**
+     * Récupère la liste des établissements (locations) associés à un compte.
+     */
     public List<Map<String, Object>> getGoogleLocations(String accountId, String accessToken) {
-        // URL format: accounts/{accountId}/locations
         String url = "https://mybusinessbusinessinformation.googleapis.com/v1/" + accountId + "/locations?readMask=name,title,storeCode";
 
         HttpHeaders headers = new HttpHeaders();

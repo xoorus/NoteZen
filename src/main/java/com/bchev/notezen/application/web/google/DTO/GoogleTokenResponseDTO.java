@@ -1,4 +1,4 @@
-package com.bchev.notezen.application.web.google.auth;
+package com.bchev.notezen.application.web.google.DTO;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
