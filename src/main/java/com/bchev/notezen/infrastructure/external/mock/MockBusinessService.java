@@ -50,6 +50,12 @@ public class MockBusinessService implements BusinessProvider {
         return "new-mock-access-token-" + System.currentTimeMillis();
     }
 
+    @Override
+    public void postReply(String accountId, String locationId, String reviewId, String text, String accessToken) {
+        log.info("MOCK API [Google] : Réponse envoyée pour l'avis {} (Etablissement: {}). Message : {}",
+                reviewId, locationId, text);
+    }
+
     private ReviewDTO createReview(String id, String author, String comment, String rating) {
         ReviewDTO dto = new ReviewDTO();
         dto.setReviewId(id);

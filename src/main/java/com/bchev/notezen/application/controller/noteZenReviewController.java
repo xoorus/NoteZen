@@ -3,6 +3,7 @@ package com.bchev.notezen.application.controller;
 import com.bchev.notezen.domain.service.ReviewManager;
 import com.bchev.notezen.domain.helpers.TokenUtils;
 import com.bchev.notezen.domain.model.Review;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,6 +18,21 @@ public class noteZenReviewController {
 
     public noteZenReviewController(ReviewManager reviewManager) {
         this.reviewManager = reviewManager;
+    }
+
+    public record ReplyRequest(String text) {}
+
+    @PostMapping("/{reviewId}/reply")
+    public ResponseEntity<Void> replyToReview(
+            @RequestHeader("Authorization") String jwt,
+            @RequestParam String locationId,
+            @PathVariable String reviewId,
+            @RequestBody ReplyRequest request) {
+
+        Long userId = TokenUtils.getUserIdFrom(jwt);
+        reviewManager.replyToReview(userId, locationId, reviewId, request.text());
+
+        return ResponseEntity.ok().build();
     }
 
     @RequestMapping("/reviews")

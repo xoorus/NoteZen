@@ -3,7 +3,7 @@ package com.bchev.notezen.application.web.google;
 import com.bchev.notezen.application.controller.DTO.GoogleTokenResponseDTO;
 import com.bchev.notezen.domain.model.User;
 import com.bchev.notezen.domain.repository.UserRepository;
-import com.bchev.notezen.infrastructure.external.google.GoogleBusinessService;
+import com.bchev.notezen.domain.service.BusinessProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 public class GoogleAuthManager {
     private final UserRepository userRepository;
     private final GoogleAuthService googleAuthService;
-    private final GoogleBusinessService googleClient;
+    private final BusinessProvider businessProvider;
 
     public String linkAccount(String code) {
         // 1. Échange du code contre les tokens (Access + Refresh + ID Token)
@@ -38,7 +38,8 @@ public class GoogleAuthManager {
         if (user.getGoogleAccountId() == null || user.getGoogleAccountId().isEmpty()) {
             try {
                 log.info("Récupération de l'Account ID auprès de Google pour {}", email);
-                String accountId = googleClient.fetchAccountId(tokens.getAccessToken());
+                String accountId = businessProvider.fetchAccountId(tokens.getAccessToken());
+                log.info(">>>> MON GOOGLE ACCOUNT ID : {} <<<<", accountId);
                 user.setGoogleAccountId(accountId);
             } catch (Exception e) {
                 log.error("Impossible de récupérer l'Account ID (Quota 429 ?). Utilisation d'un ID temporaire.");

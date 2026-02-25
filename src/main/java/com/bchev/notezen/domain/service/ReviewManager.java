@@ -32,6 +32,17 @@ public class ReviewManager {
         return List.of();
     }
 
+    public void replyToReview(Long userId, String locationId, String reviewId, String text) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+        if (user.getGoogleAccountId() != null) {
+            googleReviewManager.replyToReview(user, locationId, reviewId, text);
+        } else {
+            throw new IllegalStateException("Aucun compte Google Business lié à cet utilisateur NoteZen.");
+        }
+    }
+
     public List<Map<String, Object>> getLocationsForUser(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));

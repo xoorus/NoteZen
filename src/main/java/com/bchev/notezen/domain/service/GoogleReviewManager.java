@@ -59,6 +59,11 @@ public class GoogleReviewManager {
         return businessProvider.fetchLocations(user.getGoogleAccountId(), token);
     }
 
+    public void replyToReview(User user, String locationId, String reviewId, String text) {
+        String token = getValidToken(user);
+        businessProvider.postReply(user.getGoogleAccountId(), locationId, reviewId, text, token);
+    }
+
     public String getValidToken(User user) {
         if (user.getGoogleRefreshToken() == null && "mock-acc".equals(user.getGoogleAccountId())) {
             return "mock-token";
