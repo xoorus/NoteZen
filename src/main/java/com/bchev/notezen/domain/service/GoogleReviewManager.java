@@ -25,9 +25,8 @@ public class GoogleReviewManager {
      * Récupère les avis via le provider (Mock ou Réel).
      */
     public List<Review> getReviewsForUser(User user, String locationId) {
-        // En mode Mock, le token n'a pas d'importance, mais on garde la logique
         String validToken = getValidToken(user);
-            return businessProvider.fetchReviews(user.getGoogleAccountId(), locationId, validToken);
+        return businessProvider.fetchReviews(user.getGoogleAccountId(), locationId, validToken);
     }
 
     /**
@@ -56,7 +55,7 @@ public class GoogleReviewManager {
     }
 
     public List<Map<String, Object>> getLocations(User user) {
-        String token = getValidToken(user); // Ta méthode qui gère le refresh auto
+        String token = getValidToken(user);
         return businessProvider.fetchLocations(user.getGoogleAccountId(), token);
     }
 

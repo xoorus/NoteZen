@@ -38,7 +38,9 @@ public class MockBusinessService implements BusinessProvider {
             reviewsDTO.add(createReview("1", "Alice L.", "Excellent service, je recommande !", "FIVE"));
             reviewsDTO.add(createReview("2", "Marc A.", "Un peu bruyant mais très bon.", "FOUR"));
         }
-        reviewsDTO.add( createReview("3", "Thomas P.", "Déçu par l'accueil.", "TWO"));
+        reviewsDTO.add(createReview("3", "Thomas P.", "Déçu par l'accueil.", "TWO"));
+        reviewsDTO.add(createReview("4", "Jean Dupont", "Excellent accueil, je reviendrai !", "FIVE"));
+        reviewsDTO.add(createReview("5", "Alice Martin", "Trop d'attente pour être servi...", "TWO"));
 
         return reviewsDTO.stream().map(ReviewDTO::toReview).toList();
     }
