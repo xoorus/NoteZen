@@ -20,7 +20,8 @@ public class noteZenReviewController {
 
     @GetMapping
     public List<Review> getReviews(@RequestHeader("Authorization") String jwt, @RequestParam String locationId) {
-        Long userId = TokenUtils.getUserIdFrom(jwt); // Argument: JWT -> Result: ID
+        Long userId = TokenUtils.getUserIdFrom(jwt);
+        // On appelle le manager GÉNÉRAL, pas le manager Google
         return reviewManager.getReviewsForUser(userId, locationId);
     }
 }

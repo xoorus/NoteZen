@@ -11,7 +11,6 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "google.api.mode", havingValue = "real", matchIfMissing = true)
 public class ReviewManager {
 
     private final UserRepository userRepository;
@@ -25,7 +24,10 @@ public class ReviewManager {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Utilisateur NoteZen non trouvé (ID: " + userId + ")"));
 
-        // Délégation de la logique de token et d'API au manager spécialisé
-        return googleReviewManager.getReviewsForUser(user, locationId);
+        if (user.getGoogleAccountId() != null) {
+            return googleReviewManager.getReviewsForUser(user, locationId);
+        }
+
+        return List.of();
     }
 }
