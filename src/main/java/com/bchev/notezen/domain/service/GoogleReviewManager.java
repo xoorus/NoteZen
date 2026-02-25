@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -52,6 +53,11 @@ public class GoogleReviewManager {
         user.setTokenExpiration(LocalDateTime.now().plusSeconds(tokens.getExpiresIn()));
 
         userRepository.save(user);
+    }
+
+    public List<Map<String, Object>> getLocations(User user) {
+        String token = getValidToken(user); // Ta méthode qui gère le refresh auto
+        return businessProvider.fetchLocations(user.getGoogleAccountId(), token);
     }
 
     public String getValidToken(User user) {

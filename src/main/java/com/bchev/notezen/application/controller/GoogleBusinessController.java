@@ -40,6 +40,11 @@ public class GoogleBusinessController {
         return ResponseEntity.ok("Compte lié : " + email);
     }
 
+    @GetMapping("/auth-url")
+    public ResponseEntity<Map<String, String>> getGoogleAuthUrl() {
+        return ResponseEntity.ok(Map.of("url", googleAuthService.getAuthorizationUrl()));
+    }
+
     @GetMapping("/locations")
     public ResponseEntity<List<Map<String, Object>>> getLocations(@RequestParam String email) {
         User user = userRepository.findByEmail(email).orElseThrow();
