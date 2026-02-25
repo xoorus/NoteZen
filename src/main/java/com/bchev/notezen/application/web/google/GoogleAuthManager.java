@@ -1,8 +1,9 @@
 package com.bchev.notezen.application.web.google;
 
-import com.bchev.notezen.application.web.google.DTO.GoogleTokenResponseDTO;
-import com.bchev.notezen.repository.google.User;
-import com.bchev.notezen.repository.google.UserRepository;
+import com.bchev.notezen.application.controller.DTO.GoogleTokenResponseDTO;
+import com.bchev.notezen.domain.model.User;
+import com.bchev.notezen.domain.repository.UserRepository;
+import com.bchev.notezen.infrastructure.external.google.GoogleBusinessService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,7 +16,7 @@ import java.time.LocalDateTime;
 public class GoogleAuthManager {
     private final UserRepository userRepository;
     private final GoogleAuthService googleAuthService;
-    private final GoogleBusinessClient googleClient;
+    private final GoogleBusinessService googleClient;
 
     public String linkAccount(String code) {
         // 1. Échange du code contre les tokens (Access + Refresh + ID Token)

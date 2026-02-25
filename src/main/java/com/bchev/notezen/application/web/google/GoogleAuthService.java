@@ -1,6 +1,6 @@
 package com.bchev.notezen.application.web.google;
 
-import com.bchev.notezen.application.web.google.DTO.GoogleTokenResponseDTO;
+import com.bchev.notezen.application.controller.DTO.GoogleTokenResponseDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
