@@ -18,7 +18,6 @@ import java.util.List;
 public class GoogleReviewManager {
 
     private final UserRepository userRepository;
-    // On n'injecte plus les classes "Google" directes, mais notre interface de contrat
     private final BusinessProvider businessProvider;
 
     /**

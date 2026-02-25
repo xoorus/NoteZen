@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-@Profile("mock")
+@Profile("local")
 @Slf4j
 public class MockBusinessService implements BusinessProvider {
 

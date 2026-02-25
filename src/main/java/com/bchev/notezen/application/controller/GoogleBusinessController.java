@@ -1,7 +1,12 @@
 package com.bchev.notezen.application.controller;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import com.bchev.notezen.application.controller.DTO.GoogleTokenResponseDTO;
 import com.bchev.notezen.application.controller.DTO.ReviewDTO;
 import com.bchev.notezen.application.web.google.GoogleAuthManager;
+import com.bchev.notezen.application.web.google.GoogleAuthService;
+import com.bchev.notezen.domain.service.GoogleReviewManager;
 import com.bchev.notezen.infrastructure.external.google.GoogleBusinessService;
 import com.bchev.notezen.domain.model.Review;
 import com.bchev.notezen.domain.model.User;
@@ -24,10 +29,14 @@ public class GoogleBusinessController {
     private final GoogleAuthManager authManager;
     private final GoogleBusinessService googleClient;
     private final UserRepository userRepository;
+    private final GoogleReviewManager googleReviewManager;
+    private final GoogleAuthService googleAuthService;
 
     @GetMapping("/callback")
     public ResponseEntity<String> callback(@RequestParam String code) {
-        String email = authManager.linkAccount(code);
+        GoogleTokenResponseDTO tokens = googleAuthService.exchangeCodeForTokens(code);
+        String email = extractEmailFromToken(tokens.getIdToken());
+        googleReviewManager.linkAccount(email, tokens);
         return ResponseEntity.ok("Compte lié : " + email);
     }
 
@@ -44,5 +53,10 @@ public class GoogleBusinessController {
         String token = authManager.getValidToken(user);
         List<ReviewDTO> dtos = googleClient.fetchReviews(user.getGoogleAccountId(), locationId, token);
         return ResponseEntity.ok(dtos.stream().map(ReviewDTO::toReview).toList());
+    }
+
+    private String extractEmailFromToken(String idToken) {
+        DecodedJWT jwt = JWT.decode(idToken);
+        return jwt.getClaim("email").asString();
     }
 }

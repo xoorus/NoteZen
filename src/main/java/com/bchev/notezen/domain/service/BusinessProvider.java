@@ -1,7 +1,5 @@
 package com.bchev.notezen.domain.service;
 
-
-import com.bchev.notezen.application.controller.DTO.ReviewDTO;
 import com.bchev.notezen.domain.model.Review;
 
 import java.util.List;

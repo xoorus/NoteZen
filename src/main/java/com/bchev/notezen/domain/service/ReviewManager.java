@@ -15,7 +15,7 @@ import java.util.List;
 public class ReviewManager {
 
     private final UserRepository userRepository;
-    private final GoogleReviewManager googleReviewService;
+    private final GoogleReviewManager googleReviewManager;
 
     /**
      * Récupère la liste des avis pour un utilisateur interne NoteZen via son ID.
@@ -26,6 +26,6 @@ public class ReviewManager {
                 .orElseThrow(() -> new RuntimeException("Utilisateur NoteZen non trouvé (ID: " + userId + ")"));
 
         // Délégation de la logique de token et d'API au manager spécialisé
-        return googleReviewService.getReviewsForUser(user, locationId);
+        return googleReviewManager.getReviewsForUser(user, locationId);
     }
 }
