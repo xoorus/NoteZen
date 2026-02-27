@@ -10,11 +10,14 @@ import com.bchev.notezen.domain.service.GoogleReviewManager;
 import com.bchev.notezen.domain.model.Review;
 import com.bchev.notezen.domain.repository.UserEntity;
 import com.bchev.notezen.domain.repository.UserRepository;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -34,11 +37,18 @@ public class GoogleBusinessController {
     private String activeProfile;
 
     @GetMapping("/callback")
-    public ResponseEntity<String> callback(@RequestParam String code) {
+    public void callback(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) throws IOException {
         GoogleTokenResponseDTO tokens = googleAuthService.exchangeCodeForTokens(code);
         String email = googleAuthService.extractEmailFromToken(tokens.getIdToken());
         googleReviewManager.linkAccount(email, tokens);
-        return ResponseEntity.ok("Compte lié : " + email);
+
+        // On récupère le chemin de base dynamiquement
+        String contextPath = request.getContextPath();
+
+        // On construit une URL propre
+        // Si contextPath est vide (cas par défaut), ça donnera "/test.html"
+        // S'il y a un prefixe, ça donnera "/mon-prefixe/test.html"
+        response.sendRedirect(contextPath + "/test.html?status=success");
     }
 
     @GetMapping("/auth-url")
