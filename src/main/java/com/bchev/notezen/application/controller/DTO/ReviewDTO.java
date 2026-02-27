@@ -26,7 +26,7 @@ public class ReviewDTO {
                 reviewDTO.getComment(),
                 reviewDTO.getCreateTime(),
                 reviewDTO.getUpdateTime(),
-                ReviewReplyDTO.toReviewReply(reviewDTO.getReviewReply())
+                reviewDTO.getReviewReply() != null ? ReviewReplyDTO.toReviewReply(reviewDTO.getReviewReply()) : null
         );
     }
 }

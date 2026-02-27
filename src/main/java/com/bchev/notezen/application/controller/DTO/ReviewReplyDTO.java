@@ -12,6 +12,9 @@ public class ReviewReplyDTO {
     public String updateTime; // Format RFC 3339
 
     public static ReviewReply toReviewReply(ReviewReplyDTO reviewReplyDTO) {
+        if (reviewReplyDTO == null) {
+            return null; // Retourne null proprement si aucune réponse n'existe
+        }
         return new ReviewReply(reviewReplyDTO.getComment(), reviewReplyDTO.getUpdateTime());
     }
 }

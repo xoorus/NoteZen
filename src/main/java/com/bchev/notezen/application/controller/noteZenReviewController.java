@@ -35,16 +35,14 @@ public class noteZenReviewController {
         return ResponseEntity.ok().build();
     }
 
-    @RequestMapping("/reviews")
-    @GetMapping
+    @GetMapping("/reviews")
     public List<Review> getReviews(@RequestHeader("Authorization") String jwt, @RequestParam String locationId) {
         Long userId = TokenUtils.getUserIdFrom(jwt);
         // On appelle le manager GÉNÉRAL, pas le manager Google
         return reviewManager.getReviewsForUser(userId, locationId);
     }
 
-    @RequestMapping("/locations")
-    @GetMapping
+    @GetMapping("/locations")
     public List<Map<String, Object>> getLocations(@RequestHeader("Authorization") String jwt) {
         Long userId = TokenUtils.getUserIdFrom(jwt);
         return reviewManager.getLocationsForUser(userId);
