@@ -3,13 +3,23 @@ package com.bchev.notezen.infrastructure.external.ai;
 import com.bchev.notezen.domain.model.Review;
 import com.bchev.notezen.domain.service.AiService;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class GeminiAiService implements AiService {
 
     @Value("${google.ai.api.key}")
     private String apiKey;
+
+    private final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=";
 
     @Override
     public String suggestResponse(Review review) {
@@ -30,7 +40,42 @@ public class GeminiAiService implements AiService {
     }
 
     private String callGeminiApi(String prompt) {
-        // En mode "Local/Mock", on peut renvoyer une réponse type pour tester le front
-        return "[Suggestion IA] : Merci beaucoup pour votre retour ! Nous sommes ravis que votre expérience vous ait plu. Au plaisir de vous revoir !";
+        RestTemplate restTemplate = new RestTemplate();
+        String url = GEMINI_API_URL + apiKey;
+
+        // 1. Headers (OBLIGATOIRE)
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // 2. Structure JSON (La seule que Google accepte en v1)
+        // Elle doit être : { "contents": [ { "parts": [ { "text": "ton prompt" } ] } ] }
+        Map<String, Object> textMap = Map.of("text", prompt);
+        Map<String, Object> partsMap = Map.of("parts", List.of(textMap));
+        Map<String, Object> body = Map.of("contents", List.of(partsMap));
+
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+
+        try {
+            // Log de debug pour voir si l'URL est bien formée (sans espaces, etc.)
+            System.out.println("Tentative d'appel sur : " + url);
+
+            // On utilise postForEntity pour avoir plus de détails sur la réponse
+            ResponseEntity<Map> responseEntity = restTemplate.postForEntity(url, entity, Map.class);
+            Map<String, Object> response = responseEntity.getBody();
+
+            if (response != null && response.containsKey("candidates")) {
+                List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
+                Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
+                List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
+                return (String) parts.get(0).get("text");
+            }
+        } catch (org.springframework.web.client.HttpClientErrorException.NotFound e) {
+            System.err.println("ERREUR 404 : Google dit que ce modèle n'existe pas ou l'URL est mal formée.");
+            System.err.println("Réponse de Google : " + e.getResponseBodyAsString());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "Erreur lors de la génération.";
     }
+
 }
