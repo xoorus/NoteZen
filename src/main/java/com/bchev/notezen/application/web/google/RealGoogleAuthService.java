@@ -1,5 +1,6 @@
 package com.bchev.notezen.application.web.google;
 
+import com.auth0.jwt.JWT;
 import com.bchev.notezen.application.controller.DTO.GoogleTokenResponseDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -76,6 +77,16 @@ public class RealGoogleAuthService implements GoogleAuthService {
 
         GoogleTokenResponseDTO response = restTemplate.postForObject(url, params, GoogleTokenResponseDTO.class);
         return response != null ? response.getAccessToken() : null;
+    }
+
+    @Override
+    public String extractEmailFromToken(String idToken) {
+        try {
+            return JWT.decode(idToken).getClaim("email").asString();
+        } catch (Exception e) {
+            log.error("Erreur lors du décodage du jeton ID Google", e);
+            return null;
+        }
     }
 
     /*

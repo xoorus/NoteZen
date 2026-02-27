@@ -36,7 +36,7 @@ public class GoogleBusinessController {
     @GetMapping("/callback")
     public ResponseEntity<String> callback(@RequestParam String code) {
         GoogleTokenResponseDTO tokens = googleAuthService.exchangeCodeForTokens(code);
-        String email = extractEmailFromToken(tokens.getIdToken());
+        String email = googleAuthService.extractEmailFromToken(tokens.getIdToken());
         googleReviewManager.linkAccount(email, tokens);
         return ResponseEntity.ok("Compte lié : " + email);
     }
@@ -65,11 +65,6 @@ public class GoogleBusinessController {
         String token = authManager.getValidToken(user);
         List<Review> reviews = businessProvider.fetchReviews(user.getGoogleAccountId(), locationId, token);
         return ResponseEntity.ok(reviews);
-    }
-
-    private String extractEmailFromToken(String idToken) {
-        DecodedJWT jwt = JWT.decode(idToken);
-        return jwt.getClaim("email").asString();
     }
 
     private boolean isLocalProfileActive() {
