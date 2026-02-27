@@ -8,14 +8,13 @@ import com.bchev.notezen.application.web.google.GoogleAuthService;
 import com.bchev.notezen.domain.service.BusinessProvider;
 import com.bchev.notezen.domain.service.GoogleReviewManager;
 import com.bchev.notezen.domain.model.Review;
-import com.bchev.notezen.domain.model.User;
+import com.bchev.notezen.domain.repository.UserEntity;
 import com.bchev.notezen.domain.repository.UserRepository;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +30,9 @@ public class GoogleBusinessController {
     private final GoogleReviewManager googleReviewManager;
     private final GoogleAuthService googleAuthService;
 
+    @Value("${spring.profiles.active:default}")
+    private String activeProfile;
+
     @GetMapping("/callback")
     public ResponseEntity<String> callback(@RequestParam String code) {
         GoogleTokenResponseDTO tokens = googleAuthService.exchangeCodeForTokens(code);
@@ -39,28 +41,27 @@ public class GoogleBusinessController {
         return ResponseEntity.ok("Compte lié : " + email);
     }
 
-   /* @GetMapping("/auth-url")
-    public ResponseEntity<Map<String, String>> getGoogleAuthUrl() {
-        String url = googleAuthService.getAuthorizationUrl();
-        return ResponseEntity.ok(Map.of("url", url));
-
-    }*/
     @GetMapping("/auth-url")
-    public void getGoogleAuthUrl(HttpServletResponse response) throws IOException {
-        String url = googleAuthService.getAuthorizationUrl();
-        response.sendRedirect(url);
+    public ResponseEntity<Map<String, String>> getGoogleAuthUrl() {
+        if (isLocalProfileActive()) {
+            // En local, on renvoie une URL qui pointe directement vers notre callback
+            // avec un faux code, pour simuler la fin du processus
+            String mockCallbackUrl = "http://localhost:8080/api/google/callback?code=mock-code";
+            return ResponseEntity.ok(Map.of("url", mockCallbackUrl));
+        }
+        return ResponseEntity.ok(Map.of("url", googleAuthService.getAuthorizationUrl()));
     }
 
     @GetMapping("/locations")
     public ResponseEntity<List<Map<String, Object>>> getLocations(@RequestParam String email) {
-        User user = userRepository.findByEmail(email).orElseThrow();
+        UserEntity user = userRepository.findByEmail(email).orElseThrow();
         String token = authManager.getValidToken(user);
         return ResponseEntity.ok(businessProvider.fetchLocations(user.getGoogleAccountId(), token));
     }
 
     @GetMapping("/reviews")
     public ResponseEntity<List<Review>> getReviews(@RequestParam String email, @RequestParam String locationId) {
-        User user = userRepository.findByEmail(email).orElseThrow();
+        UserEntity user = userRepository.findByEmail(email).orElseThrow();
         String token = authManager.getValidToken(user);
         List<Review> reviews = businessProvider.fetchReviews(user.getGoogleAccountId(), locationId, token);
         return ResponseEntity.ok(reviews);
@@ -69,5 +70,9 @@ public class GoogleBusinessController {
     private String extractEmailFromToken(String idToken) {
         DecodedJWT jwt = JWT.decode(idToken);
         return jwt.getClaim("email").asString();
+    }
+
+    private boolean isLocalProfileActive() {
+        return "local".equals(activeProfile);
     }
 }

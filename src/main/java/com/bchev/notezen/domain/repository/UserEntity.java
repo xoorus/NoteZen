@@ -1,4 +1,4 @@
-package com.bchev.notezen.domain.model;
+package com.bchev.notezen.domain.repository;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "users")
 @Data
-public class User {
+public class UserEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

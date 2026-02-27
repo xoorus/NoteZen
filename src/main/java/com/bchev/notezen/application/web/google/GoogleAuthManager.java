@@ -1,7 +1,7 @@
 package com.bchev.notezen.application.web.google;
 
 import com.bchev.notezen.application.controller.DTO.GoogleTokenResponseDTO;
-import com.bchev.notezen.domain.model.User;
+import com.bchev.notezen.domain.repository.UserEntity;
 import com.bchev.notezen.domain.repository.UserRepository;
 import com.bchev.notezen.domain.service.BusinessProvider;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +30,7 @@ public class GoogleAuthManager {
         String email = com.auth0.jwt.JWT.decode(tokens.getIdToken()).getClaim("email").asString();
 
         // 3. Récupération de l'utilisateur existant ou création d'un nouveau
-        User user = userRepository.findByEmail(email).orElse(new User());
+        UserEntity user = userRepository.findByEmail(email).orElse(new UserEntity());
         user.setEmail(email);
 
         // 4. LOGIQUE OPTIMISÉE POUR L'ACCOUNT ID
@@ -61,7 +61,7 @@ public class GoogleAuthManager {
         return email;
     }
 
-    public String getValidToken(User user) {
+    public String getValidToken(UserEntity user) {
         if (user.getTokenExpiration().isBefore(LocalDateTime.now().plusMinutes(5))) {
             String newToken = googleAuthService.refreshAccessToken(user.getGoogleRefreshToken());
             user.setGoogleAccessToken(newToken);

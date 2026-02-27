@@ -1,10 +1,9 @@
 package com.bchev.notezen.domain.service;
 
 import com.bchev.notezen.domain.model.Review;
-import com.bchev.notezen.domain.model.User;
+import com.bchev.notezen.domain.repository.UserEntity;
 import com.bchev.notezen.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,7 +21,7 @@ public class ReviewManager {
      * Gère automatiquement la récupération du compte et la validité du token.
      */
     public List<Review> getReviewsForUser(Long userId, String locationId) {
-        User user = userRepository.findById(userId)
+        UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Utilisateur NoteZen non trouvé (ID: " + userId + ")"));
 
         if (user.getGoogleAccountId() != null) {
@@ -33,7 +32,7 @@ public class ReviewManager {
     }
 
     public void replyToReview(Long userId, String locationId, String reviewId, String text) {
-        User user = userRepository.findById(userId)
+        UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
         if (user.getGoogleAccountId() != null) {
@@ -44,7 +43,7 @@ public class ReviewManager {
     }
 
     public List<Map<String, Object>> getLocationsForUser(Long userId) {
-        User user = userRepository.findById(userId)
+        UserEntity user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
 
         if (user.getGoogleAccountId() == null) {

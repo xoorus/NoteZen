@@ -1,9 +1,8 @@
 package com.bchev.notezen.domain.service;
 
 import com.bchev.notezen.application.controller.DTO.GoogleTokenResponseDTO;
-import com.bchev.notezen.application.controller.DTO.ReviewDTO;
 import com.bchev.notezen.domain.model.Review;
-import com.bchev.notezen.domain.model.User;
+import com.bchev.notezen.domain.repository.UserEntity;
 import com.bchev.notezen.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +23,7 @@ public class GoogleReviewManager {
     /**
      * Récupère les avis via le provider (Mock ou Réel).
      */
-    public List<Review> getReviewsForUser(User user, String locationId) {
+    public List<Review> getReviewsForUser(UserEntity user, String locationId) {
         String validToken = getValidToken(user);
         return businessProvider.fetchReviews(user.getGoogleAccountId(), locationId, validToken);
     }
@@ -33,8 +32,8 @@ public class GoogleReviewManager {
      * Logique de liaison de compte simplifiée pour le POC
      */
     public void linkAccount(String email, GoogleTokenResponseDTO tokens) {
-        User user = userRepository.findByEmail(email).orElseGet(() -> {
-            User newUser = new User();
+        UserEntity user = userRepository.findByEmail(email).orElseGet(() -> {
+            UserEntity newUser = new UserEntity();
             newUser.setEmail(email);
             return newUser;
         });
@@ -42,6 +41,7 @@ public class GoogleReviewManager {
         // Utilisation du provider pour récupérer l'ID (sera mocké si profil mock actif)
         if (user.getGoogleAccountId() == null) {
             String accountId = businessProvider.fetchAccountId(tokens.getAccessToken());
+            log.info(">>>> MON GOOGLE ACCOUNT ID : {} <<<<", accountId);
             user.setGoogleAccountId(accountId);
         }
 
@@ -54,17 +54,17 @@ public class GoogleReviewManager {
         userRepository.save(user);
     }
 
-    public List<Map<String, Object>> getLocations(User user) {
+    public List<Map<String, Object>> getLocations(UserEntity user) {
         String token = getValidToken(user);
         return businessProvider.fetchLocations(user.getGoogleAccountId(), token);
     }
 
-    public void replyToReview(User user, String locationId, String reviewId, String text) {
+    public void replyToReview(UserEntity user, String locationId, String reviewId, String text) {
         String token = getValidToken(user);
         businessProvider.postReply(user.getGoogleAccountId(), locationId, reviewId, text, token);
     }
 
-    public String getValidToken(User user) {
+    public String getValidToken(UserEntity user) {
         if (user.getGoogleRefreshToken() == null && "mock-acc".equals(user.getGoogleAccountId())) {
             return "mock-token";
         }
