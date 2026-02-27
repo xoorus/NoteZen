@@ -35,6 +35,9 @@ google:
   client-id: ${GOOGLE_CLIENT_ID:dummy_id}
   client-secret: ${GOOGLE_CLIENT_SECRET:dummy_secret}
   redirect-uri: ${GOOGLE_REDIRECT_URI:http://localhost:8080/api/google/callback}
+  ai:
+    api:
+      key: "dummy_key"
 
 jwt:
   secret: ${JWT_SECRET}
