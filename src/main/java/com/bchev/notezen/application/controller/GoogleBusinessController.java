@@ -48,7 +48,7 @@ public class GoogleBusinessController {
         // On construit une URL propre
         // Si contextPath est vide (cas par défaut), ça donnera "/test.html"
         // S'il y a un prefixe, ça donnera "/mon-prefixe/test.html"
-        response.sendRedirect(contextPath + "/test.html?status=success");
+        response.sendRedirect(request.getContextPath() + "/test.html?status=success&email=" + email);
     }
 
     @GetMapping("/auth-url")
