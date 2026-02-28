@@ -13,6 +13,7 @@ import com.bchev.notezen.domain.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +22,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/google")
 @CrossOrigin(origins = "*", allowedHeaders = "*")
@@ -42,13 +44,8 @@ public class GoogleBusinessController {
         String email = googleAuthService.extractEmailFromToken(tokens.getIdToken());
         googleReviewManager.linkAccount(email, tokens);
 
-        // On récupère le chemin de base dynamiquement
-        String contextPath = request.getContextPath();
-
-        // On construit une URL propre
-        // Si contextPath est vide (cas par défaut), ça donnera "/test.html"
-        // S'il y a un prefixe, ça donnera "/mon-prefixe/test.html"
-        response.sendRedirect(request.getContextPath() + "/test.html?status=success&email=" + email);
+        String frontendUrl = "http://localhost:4200/dashboard?token=" + tokens.getIdToken(); // Utilise l'ID Token comme JWT simple
+        response.sendRedirect(frontendUrl);
     }
 
     @GetMapping("/auth-url")
@@ -63,16 +60,57 @@ public class GoogleBusinessController {
     }
 
     @GetMapping("/locations")
-    public ResponseEntity<List<Map<String, Object>>> getLocations(@RequestParam String email) {
-        UserEntity user = userRepository.findByEmail(email).orElseThrow();
+    public ResponseEntity<List<Map<String, Object>>> getLocations(
+            @RequestHeader("Authorization") String authHeader) { // On utilise le Header, pas le Param
+
+        String email;
+        String jwt = authHeader.replace("Bearer ", "");
+
+        if (isLocalProfileActive() && "header.payload.signature".equals(jwt)) {
+            email = "dev@notezen.io";
+        } else {
+            try {
+                email = com.auth0.jwt.JWT.decode(jwt).getClaim("email").asString();
+            } catch (Exception e) {
+                return ResponseEntity.status(401).build(); // Token mal formé
+            }
+        }
+
+        // 2. Recherche de l'utilisateur avec l'email extrait
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+        // 3. Récupération d'un token Google valide (Refresh si besoin)
         String token = authManager.getValidToken(user);
+
         return ResponseEntity.ok(businessProvider.fetchLocations(user.getGoogleAccountId(), token));
     }
 
     @GetMapping("/reviews")
-    public ResponseEntity<List<Review>> getReviews(@RequestParam String email, @RequestParam String locationId) {
-        UserEntity user = userRepository.findByEmail(email).orElseThrow();
+    public ResponseEntity<List<Review>> getReviews(
+            @RequestHeader("Authorization") String authHeader, // Idem ici
+            @RequestParam String locationId) {
+
+        String email;
+        String jwt = authHeader.replace("Bearer ", "");
+
+        if (isLocalProfileActive() && "header.payload.signature".equals(jwt)) {
+            email = "dev@notezen.io";
+        } else {
+            try {
+                email = com.auth0.jwt.JWT.decode(jwt).getClaim("email").asString();
+            } catch (Exception e) {
+                return ResponseEntity.status(401).build(); // Token mal formé
+            }
+        }
+
+        // 2. Recherche de l'utilisateur avec l'email extrait
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+        // 3. Récupération d'un token Google valide (Refresh si besoin)
         String token = authManager.getValidToken(user);
+
         List<Review> reviews = businessProvider.fetchReviews(user.getGoogleAccountId(), locationId, token);
         return ResponseEntity.ok(reviews);
     }

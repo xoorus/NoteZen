@@ -7,6 +7,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
+import java.time.LocalDateTime;
+
 @Configuration
 @Profile("local")
 public class MockDataInitializer {
@@ -20,6 +22,7 @@ public class MockDataInitializer {
             mockUser.setEmail("dev@notezen.io");
             mockUser.setGoogleAccountId("accounts/mock-user-123");
             mockUser.setGoogleAccessToken("fake-access-token");
+            mockUser.setTokenExpiration(LocalDateTime.now().plusHours(10));
 
             userRepository.saveAndFlush(mockUser);
             System.out.println(">> [MOCK] Utilisateur de test créé avec ID: accounts/mock-user-123");

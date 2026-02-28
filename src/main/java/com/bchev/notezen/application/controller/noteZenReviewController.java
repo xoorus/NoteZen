@@ -11,7 +11,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "http://localhost:4200")
 public class noteZenReviewController {
 
     ReviewManager reviewManager;
@@ -38,7 +38,6 @@ public class noteZenReviewController {
     @GetMapping("/reviews")
     public List<Review> getReviews(@RequestHeader("Authorization") String jwt, @RequestParam String locationId) {
         Long userId = TokenUtils.getUserIdFrom(jwt);
-        // On appelle le manager GÉNÉRAL, pas le manager Google
         return reviewManager.getReviewsForUser(userId, locationId);
     }
 

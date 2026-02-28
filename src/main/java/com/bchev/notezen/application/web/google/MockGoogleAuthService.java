@@ -20,7 +20,7 @@ public class MockGoogleAuthService implements GoogleAuthService {
         GoogleTokenResponseDTO mockResponse = new GoogleTokenResponseDTO();
         mockResponse.setAccessToken("fake-access-token-" + UUID.randomUUID());
         mockResponse.setExpiresIn(3600);
-        mockResponse.setIdToken("fake-id-token");
+        mockResponse.setIdToken("header.payload.signature");
         return mockResponse;
     }
 
