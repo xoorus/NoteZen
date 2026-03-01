@@ -69,3 +69,4 @@ public class AiController {
 
     public record SuggestionResponse(String text) {}
 }
+
