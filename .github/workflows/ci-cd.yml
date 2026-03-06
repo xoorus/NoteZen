@@ -23,7 +23,7 @@ jobs:
           cache: 'maven'
 
       - name: Build + Tests
-        run: mvn -B verify
+        run: mvn -B verify -Dspring-boot.run.profiles=local
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v2
@@ -48,7 +48,7 @@ jobs:
           cache: 'maven'
 
       - name: Build Spring Boot
-        run: mvn -B clean package -DskipTests
+        run: mvn -B clean package -DskipTests -Dspring-boot.run.profiles=local
 
       - name: Upload jar
         uses: appleboy/scp-action@v0.1.7
