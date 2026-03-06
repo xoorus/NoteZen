@@ -1,6 +1,7 @@
 package com.bchev.notezen.domain.service;
 
 import com.bchev.notezen.application.controller.DTO.GoogleTokenResponseDTO;
+import com.bchev.notezen.application.web.google.GoogleAuthManager;
 import com.bchev.notezen.domain.model.Review;
 import com.bchev.notezen.domain.repository.UserEntity;
 import com.bchev.notezen.domain.repository.UserRepository;
@@ -23,8 +24,8 @@ public class GoogleReviewManager {
     /**
      * Récupère les avis via le provider (Mock ou Réel).
      */
-    public List<Review> getReviewsForUser(UserEntity user, String locationId) {
-        String validToken = getValidToken(user);
+    public List<Review> getReviewsForUser(UserEntity user, String locationId, GoogleAuthManager googleAuthManager) {
+        String validToken = googleAuthManager.getValidToken(user);
         return businessProvider.fetchReviews(user.getGoogleAccountId(), locationId, validToken);
     }
 
@@ -32,14 +33,17 @@ public class GoogleReviewManager {
      * Logique de liaison de compte simplifiée pour le POC
      */
     public void linkAccount(String email, GoogleTokenResponseDTO tokens) {
+        log.info("linking account");
         UserEntity user = userRepository.findByEmail(email).orElseGet(() -> {
             UserEntity newUser = new UserEntity();
             newUser.setEmail(email);
             return newUser;
         });
+        log.info("user linked");
 
         // Utilisation du provider pour récupérer l'ID (sera mocké si profil mock actif)
         if (user.getGoogleAccountId() == null) {
+            log.info("no accountID for this user, fetching...");
             String accountId = businessProvider.fetchAccountId(tokens.getAccessToken());
             log.info(">>>> MON GOOGLE ACCOUNT ID : {} <<<<", accountId);
             user.setGoogleAccountId(accountId);
@@ -47,6 +51,7 @@ public class GoogleReviewManager {
 
         user.setGoogleAccessToken(tokens.getAccessToken());
         if (tokens.getRefreshToken() != null) {
+            log.info("setting refresh token");
             user.setGoogleRefreshToken(tokens.getRefreshToken());
         }
         user.setTokenExpiration(LocalDateTime.now().plusSeconds(tokens.getExpiresIn()));
@@ -54,33 +59,14 @@ public class GoogleReviewManager {
         userRepository.save(user);
     }
 
-    public List<Map<String, Object>> getLocations(UserEntity user) {
-        String token = getValidToken(user);
+    public List<Map<String, Object>> getLocations(UserEntity user, GoogleAuthManager googleAuthManager) {
+        String token = googleAuthManager.getValidToken(user);
         return businessProvider.fetchLocations(user.getGoogleAccountId(), token);
     }
 
-    public void replyToReview(UserEntity user, String locationId, String reviewId, String text) {
-        String token = getValidToken(user);
+    public void replyToReview(UserEntity user, String locationId, String reviewId, String text, GoogleAuthManager googleAuthManager) {
+        String token = googleAuthManager.getValidToken(user);
         businessProvider.postReply(user.getGoogleAccountId(), locationId, reviewId, text, token);
     }
 
-    public String getValidToken(UserEntity user) {
-        if (user.getGoogleRefreshToken() == null && "mock-acc".equals(user.getGoogleAccountId())) {
-            return "mock-token";
-        }
-
-        boolean needsRefresh = user.getTokenExpiration() == null ||
-                LocalDateTime.now().isAfter(user.getTokenExpiration().minusMinutes(5));
-
-        if (needsRefresh && user.getGoogleRefreshToken() != null) {
-            log.info("Token expiré pour {}. Rafraîchissement via provider...", user.getEmail());
-            // Le provider peut aussi gérer le refresh
-            String newToken = businessProvider.refreshAccessToken(user.getGoogleRefreshToken());
-            user.setGoogleAccessToken(newToken);
-            user.setTokenExpiration(LocalDateTime.now().plusSeconds(3600));
-            userRepository.save(user);
-            return newToken;
-        }
-        return user.getGoogleAccessToken();
-    }
 }

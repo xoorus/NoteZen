@@ -32,6 +32,7 @@ public class RealGoogleAuthService implements GoogleAuthService {
      */
     @Override
     public GoogleTokenResponseDTO exchangeCodeForTokens(String code) {
+        log.info("exchangeCodeForTokens real");
         String url = "https://oauth2.googleapis.com/token";
 
         HttpHeaders headers = new HttpHeaders();
@@ -43,11 +44,10 @@ public class RealGoogleAuthService implements GoogleAuthService {
         params.add("client_secret", clientSecret);
         params.add("redirect_uri", redirectUri);
         params.add("grant_type", "authorization_code");
-        // Nécessaire pour obtenir le refresh_token lors de la première connexion
-        params.add("access_type", "offline");
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
-
+        log.info("request exchangeCodeForTokens : {}", params.toSingleValueMap());
+        log.info("VÉRIFICATION FINALE - ClientID: [{}], RedirectURI: [{}]", clientId.trim(), redirectUri.trim());
         return restTemplate.postForObject(url, request, GoogleTokenResponseDTO.class);
     }
 
@@ -67,6 +67,10 @@ public class RealGoogleAuthService implements GoogleAuthService {
      */
     @Override
     public String refreshAccessToken(String refreshToken) {
+        log.info("Appel à l'API OAuth2 de Google pour rafraîchir le token...");
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
         String url = "https://oauth2.googleapis.com/token";
 
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
@@ -81,6 +85,7 @@ public class RealGoogleAuthService implements GoogleAuthService {
 
     @Override
     public String extractEmailFromToken(String idToken) {
+        log.info("extract email from token {}", idToken);
         try {
             return JWT.decode(idToken).getClaim("email").asString();
         } catch (Exception e) {

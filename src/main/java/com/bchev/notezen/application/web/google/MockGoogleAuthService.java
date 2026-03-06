@@ -40,6 +40,6 @@ public class MockGoogleAuthService implements GoogleAuthService {
     @Override
     public String extractEmailFromToken(String idToken) {
         log.info("[MOCK] Extraction de l'email pour le token : {}", idToken);
-        return "dev@notezen.io";
+        return "dev@notezen.fr";
     }
 }

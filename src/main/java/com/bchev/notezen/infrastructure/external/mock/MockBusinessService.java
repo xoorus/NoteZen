@@ -46,11 +46,6 @@ public class MockBusinessService implements BusinessProvider {
     }
 
     @Override
-    public String refreshAccessToken(String refreshToken) {
-        return "new-mock-access-token-" + System.currentTimeMillis();
-    }
-
-    @Override
     public void postReply(String accountId, String locationId, String reviewId, String text, String accessToken) {
         log.info("MOCK API [Google] : Réponse envoyée pour l'avis {} (Etablissement: {}). Message : {}",
                 reviewId, locationId, text);

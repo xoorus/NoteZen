@@ -1,5 +1,6 @@
 package com.bchev.notezen.application.controller;
 
+import com.bchev.notezen.application.web.google.GoogleAuthManager;
 import com.bchev.notezen.domain.model.Review;
 import com.bchev.notezen.domain.repository.UserEntity;
 import com.bchev.notezen.domain.repository.UserRepository;
@@ -22,11 +23,13 @@ public class AiController {
     private final AiService aiService;
     private final ReviewManager reviewManager;
     private final UserRepository userRepository;
+    private final GoogleAuthManager googleAuthManager;
 
-    public AiController(AiService aiService, ReviewManager reviewManager, UserRepository userRepository) {
+    public AiController(AiService aiService, ReviewManager reviewManager, UserRepository userRepository, GoogleAuthManager googleAuthManager) {
         this.aiService = aiService;
         this.reviewManager = reviewManager;
         this.userRepository = userRepository;
+        this.googleAuthManager = googleAuthManager;
     }
 
     @PostMapping("/suggest")
@@ -38,7 +41,7 @@ public class AiController {
         UserEntity user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'email : " + email));
 
-        List<Review> reviews = reviewManager.getReviewsForUser(user.getId(), locationId);
+        List<Review> reviews = reviewManager.getReviewsForUser(user.getId(), locationId, googleAuthManager);
 
         Review review = reviews.stream()
                 .filter(r -> r.getReviewId().equals(reviewId))

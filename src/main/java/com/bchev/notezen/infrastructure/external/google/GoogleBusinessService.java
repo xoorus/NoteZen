@@ -32,12 +32,13 @@ public class GoogleBusinessService implements BusinessProvider {
 
     @Override
     public String fetchAccountId(String accessToken) {
+        log.info("fetchAccountId");
         String url = "https://mybusinessbusinessinformation.googleapis.com/v1/accounts";
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
-
         ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers), Map.class);
         List<Map<String, Object>> accounts = (List<Map<String, Object>>) response.getBody().get("accounts");
+
         return (accounts != null && !accounts.isEmpty()) ? (String) accounts.get(0).get("name") : null;
     }
 
@@ -60,45 +61,6 @@ public class GoogleBusinessService implements BusinessProvider {
 
         ListReviewsResponseDTO response = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers), ListReviewsResponseDTO.class).getBody();
         return response != null ? response.getReviews().stream().map(ReviewDTO::toReview).toList() : List.of();
-    }
-
-    @Override
-    public String refreshAccessToken(String refreshToken) {
-
-        log.info("Appel à l'API OAuth2 de Google pour rafraîchir le token...");
-
-        String url = "https://oauth2.googleapis.com/token";
-
-        // Préparation des paramètres pour la requête POST (Format x-www-form-urlencoded)
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("client_id", clientId);         // Injecté via
-        params.add("client_secret", clientSecret); // Injecté via ")
-        params.add("refresh_token", refreshToken);
-        params.add("grant_type", "refresh_token");
-
-        HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
-
-        try {
-            // On réutilise votre DTO existant GoogleTokenResponseDTO
-            ResponseEntity<GoogleTokenResponseDTO> response = restTemplate.postForEntity(
-                    url,
-                    request,
-                    GoogleTokenResponseDTO.class
-            );
-
-            if (response.getBody() != null) {
-                log.info("Nouveau token obtenu avec succès.");
-                return response.getBody().getAccessToken();
-            }
-        } catch (Exception e) {
-            log.error("Erreur lors du rafraîchissement du token Google : {}", e.getMessage());
-            throw new RuntimeException("Impossible de rafraîchir l'accès Google", e);
-        }
-
-        return null;
     }
 
     @Override

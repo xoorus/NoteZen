@@ -19,7 +19,7 @@ public class MockDataInitializer {
             userRepository.deleteAllInBatch();
 
             UserEntity mockUser = new UserEntity();
-            mockUser.setEmail("dev@notezen.io");
+            mockUser.setEmail("dev@notezen.fr");
             mockUser.setGoogleAccountId("accounts/mock-user-123");
             mockUser.setGoogleAccessToken("fake-access-token");
             mockUser.setTokenExpiration(LocalDateTime.now().plusHours(10));

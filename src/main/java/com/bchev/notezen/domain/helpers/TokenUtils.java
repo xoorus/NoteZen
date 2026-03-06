@@ -33,7 +33,7 @@ public class TokenUtils {
         }
 
         if ("header.payload.signature".equals(cleanToken)) {
-            return 1L; // On renvoie l'ID de l'utilisateur de test (dev@notezen.io)
+            return 1L; // On renvoie l'ID de l'utilisateur de test (dev@notezen.fr)
         }
 
         // Sécurité supplémentaire : vérifie s'il y a bien des points

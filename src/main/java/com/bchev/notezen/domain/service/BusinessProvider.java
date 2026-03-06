@@ -9,6 +9,5 @@ public interface BusinessProvider {
     String fetchAccountId(String accessToken);
     List<Map<String, Object>> fetchLocations(String accountId, String accessToken);
     List<Review> fetchReviews(String accountId, String locationId, String accessToken);
-    String refreshAccessToken(String refreshToken);
     void postReply(String accountId, String locationId, String reviewId, String text, String accessToken);
 }

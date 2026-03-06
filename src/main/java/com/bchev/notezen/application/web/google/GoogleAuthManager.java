@@ -62,13 +62,21 @@ public class GoogleAuthManager {
     }
 
     public String getValidToken(UserEntity user) {
-        if (user.getTokenExpiration().isBefore(LocalDateTime.now().plusMinutes(5))) {
+        // Vérification de l'expiration (ex: 5 minutes de marge)
+        if (user.getTokenExpiration() == null ||
+                user.getTokenExpiration().isBefore(LocalDateTime.now().plusMinutes(5))) {
+
+            log.info("Rafraîchissement du token pour : {}", user.getEmail());
             String newToken = googleAuthService.refreshAccessToken(user.getGoogleRefreshToken());
+
             user.setGoogleAccessToken(newToken);
+            // Google renvoie généralement une validité de 3600s
             user.setTokenExpiration(LocalDateTime.now().plusHours(1));
             userRepository.save(user);
+
             return newToken;
         }
         return user.getGoogleAccessToken();
     }
+
 }
