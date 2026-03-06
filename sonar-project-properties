@@ -1,0 +1,4 @@
+sonar.projectKey=notezen
+sonar.organization=bastienche
+sonar.sources=backend/src
+sonar.java.binaries=backend/target
