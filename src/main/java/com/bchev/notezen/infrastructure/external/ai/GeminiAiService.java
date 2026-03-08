@@ -2,6 +2,7 @@ package com.bchev.notezen.infrastructure.external.ai;
 
 import com.bchev.notezen.domain.model.Review;
 import com.bchev.notezen.domain.service.AiService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -13,11 +14,12 @@ import org.springframework.web.client.RestTemplate;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 public class GeminiAiService implements AiService {
 
     @Value("${google.ai.api.key}")
-    private String apiKey;
+    private String API_KEY;
 
     private final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=";
 
@@ -35,20 +37,19 @@ public class GeminiAiService implements AiService {
                 review.getComment() != null ? review.getComment() : "L'utilisateur n'a pas laissé de texte, remercie juste pour la note."
         );
 
-        // 2. Appel à l'API (Simulé ici pour ton POC, à remplacer par l'appel HTTP réel)
+        // 2. Appel à l'API
         return callGeminiApi(prompt);
     }
 
     private String callGeminiApi(String prompt) {
         RestTemplate restTemplate = new RestTemplate();
-        String url = GEMINI_API_URL + apiKey;
+        String url = GEMINI_API_URL + API_KEY;
 
-        // 1. Headers (OBLIGATOIRE)
+        // 1. Headers
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         // 2. Structure JSON (La seule que Google accepte en v1)
-        // Elle doit être : { "contents": [ { "parts": [ { "text": "ton prompt" } ] } ] }
         Map<String, Object> textMap = Map.of("text", prompt);
         Map<String, Object> partsMap = Map.of("parts", List.of(textMap));
         Map<String, Object> body = Map.of("contents", List.of(partsMap));
@@ -69,12 +70,12 @@ public class GeminiAiService implements AiService {
                 List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
                 return (String) parts.get(0).get("text");
             }
+
         } catch (org.springframework.web.client.HttpClientErrorException.NotFound e) {
-            System.err.println("ERREUR 404 : Google dit que ce modèle n'existe pas ou l'URL est mal formée.");
-            System.err.println("Réponse de Google : " + e.getResponseBodyAsString());
-        } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ERREUR 404 : Ce modèle n'existe pas ou l'URL est mal formée.");
+            log.error("Réponse de Google : {}", e.getResponseBodyAsString());
         }
+
         return "Erreur lors de la génération.";
     }
 
