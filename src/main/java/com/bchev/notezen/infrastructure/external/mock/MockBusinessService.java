@@ -1,8 +1,8 @@
 package com.bchev.notezen.infrastructure.external.mock;
 
-import com.bchev.notezen.application.controller.DTO.ReviewDTO;
-import com.bchev.notezen.application.controller.DTO.ReviewerDTO;
-import com.bchev.notezen.application.controller.DTO.StarRatingDTO;
+import com.bchev.notezen.application.controller.dto.ReviewDTO;
+import com.bchev.notezen.application.controller.dto.ReviewerDTO;
+import com.bchev.notezen.application.controller.dto.StarRatingDTO;
 import com.bchev.notezen.domain.model.Review;
 import com.bchev.notezen.domain.service.BusinessProvider;
 import lombok.extern.slf4j.Slf4j;

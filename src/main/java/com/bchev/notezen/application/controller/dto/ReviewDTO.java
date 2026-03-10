@@ -1,4 +1,4 @@
-package com.bchev.notezen.application.controller.DTO;
+package com.bchev.notezen.application.controller.dto;
 
 import com.bchev.notezen.domain.model.Review;
 import com.bchev.notezen.domain.model.StarRating;

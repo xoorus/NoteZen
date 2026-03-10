@@ -1,6 +1,6 @@
 package com.bchev.notezen.domain.service;
 
-import com.bchev.notezen.application.controller.DTO.GoogleTokenResponseDTO;
+import com.bchev.notezen.application.controller.dto.GoogleTokenResponseDTO;
 import com.bchev.notezen.application.web.google.GoogleAuthManager;
 import com.bchev.notezen.domain.model.Review;
 import com.bchev.notezen.domain.repository.UserEntity;

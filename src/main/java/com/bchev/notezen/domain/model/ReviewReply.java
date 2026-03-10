@@ -8,6 +8,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ReviewReply {
-    public String comment;
-    public String updateTime; // Format RFC 3339
+    private String comment;
+    private String updateTime; // Format RFC 3339
 }

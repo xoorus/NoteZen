@@ -1,6 +1,6 @@
 package com.bchev.notezen.application.web.google;
 
-import com.bchev.notezen.application.controller.DTO.GoogleTokenResponseDTO;
+import com.bchev.notezen.application.controller.dto.GoogleTokenResponseDTO;
 import com.bchev.notezen.domain.repository.UserEntity;
 import com.bchev.notezen.domain.repository.UserRepository;
 import com.bchev.notezen.domain.service.BusinessProvider;
@@ -33,8 +33,7 @@ public class GoogleAuthManager {
         UserEntity user = userRepository.findByEmail(email).orElse(new UserEntity());
         user.setEmail(email);
 
-        // 4. LOGIQUE OPTIMISÉE POUR L'ACCOUNT ID
-        // On n'appelle Google Business que si on n'a pas déjà l'ID en base
+        // 4. LOGIQUE OPTIMISÉE POUR L'ACCOUNT ID On appelle Google Business que si on n'a pas déjà l'ID en base
         if (user.getGoogleAccountId() == null || user.getGoogleAccountId().isEmpty()) {
             try {
                 log.info("Récupération de l'Account ID auprès de Google pour {}", email);
@@ -43,8 +42,6 @@ public class GoogleAuthManager {
                 user.setGoogleAccountId(accountId);
             } catch (Exception e) {
                 log.error("Impossible de récupérer l'Account ID (Quota 429 ?). Utilisation d'un ID temporaire.");
-                // Optionnel : mettre un ID fictif pour ne pas bloquer le développement
-                // user.setGoogleAccountId("accounts/temp-id-waiting-approval");
             }
         } else {
             log.info("L'Account ID pour {} est déjà connu en base : {}", email, user.getGoogleAccountId());

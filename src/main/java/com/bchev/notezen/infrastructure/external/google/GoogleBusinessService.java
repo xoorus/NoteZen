@@ -1,8 +1,7 @@
 package com.bchev.notezen.infrastructure.external.google;
 
-import com.bchev.notezen.application.controller.DTO.GoogleTokenResponseDTO;
-import com.bchev.notezen.application.controller.DTO.ListReviewsResponseDTO;
-import com.bchev.notezen.application.controller.DTO.ReviewDTO;
+import com.bchev.notezen.application.controller.dto.ListReviewsResponseDTO;
+import com.bchev.notezen.application.controller.dto.ReviewDTO;
 import com.bchev.notezen.domain.model.Review;
 import com.bchev.notezen.domain.service.BusinessProvider;
 
@@ -11,8 +10,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;

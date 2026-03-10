@@ -1,9 +1,6 @@
 package com.bchev.notezen.application.web.google;
 
-import com.bchev.notezen.application.controller.DTO.GoogleTokenResponseDTO;
-
-import java.util.List;
-import java.util.Map;
+import com.bchev.notezen.application.controller.dto.GoogleTokenResponseDTO;
 
 public interface GoogleAuthService {
     String getAuthorizationUrl();

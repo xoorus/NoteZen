@@ -1,8 +1,6 @@
 package com.bchev.notezen.application.controller;
 
-import com.auth0.jwt.JWT;
-import com.auth0.jwt.interfaces.DecodedJWT;
-import com.bchev.notezen.application.controller.DTO.GoogleTokenResponseDTO;
+import com.bchev.notezen.application.controller.dto.GoogleTokenResponseDTO;
 import com.bchev.notezen.application.web.google.GoogleAuthManager;
 import com.bchev.notezen.application.web.google.GoogleAuthService;
 import com.bchev.notezen.domain.service.BusinessProvider;

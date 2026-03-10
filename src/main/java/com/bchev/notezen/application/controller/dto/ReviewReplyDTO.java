@@ -1,15 +1,14 @@
-package com.bchev.notezen.application.controller.DTO;
+package com.bchev.notezen.application.controller.dto;
 
 import com.bchev.notezen.domain.model.ReviewReply;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
 
 @AllArgsConstructor
 @Getter
 public class ReviewReplyDTO {
-    public String comment;
-    public String updateTime; // Format RFC 3339
+    private String comment;
+    private String updateTime; // Format RFC 3339
 
     public static ReviewReply toReviewReply(ReviewReplyDTO reviewReplyDTO) {
         if (reviewReplyDTO == null) {

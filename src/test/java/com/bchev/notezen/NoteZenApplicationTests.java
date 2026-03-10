@@ -10,6 +10,7 @@ class NoteZenApplicationTests {
 
 	@Test
 	void contextLoads() {
+		//loading Ok
 	}
 
 }

@@ -1,4 +1,4 @@
-package com.bchev.notezen.application.controller.DTO;
+package com.bchev.notezen.application.controller.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;

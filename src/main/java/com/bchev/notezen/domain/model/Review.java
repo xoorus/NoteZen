@@ -8,12 +8,12 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 public class Review {
-    public String name;
-    public String reviewId;
-    public Reviewer reviewer;
-    public StarRating starRating;
-    public String comment;
-    public String createTime;
-    public String updateTime;
-    public ReviewReply reviewReply;
+    private String name;
+    private String reviewId;
+    private Reviewer reviewer;
+    private StarRating starRating;
+    private String comment;
+    private String createTime;
+    private String updateTime;
+    private ReviewReply reviewReply;
 }

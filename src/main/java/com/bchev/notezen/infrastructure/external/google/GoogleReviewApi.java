@@ -1,7 +1,7 @@
 package com.bchev.notezen.infrastructure.external.google;
 
-import com.bchev.notezen.application.controller.DTO.ListReviewsResponseDTO;
-import com.bchev.notezen.application.controller.DTO.ReviewDTO;
+import com.bchev.notezen.application.controller.dto.ListReviewsResponseDTO;
+import com.bchev.notezen.application.controller.dto.ReviewDTO;
 import com.bchev.notezen.domain.model.Review;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

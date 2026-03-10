@@ -8,7 +8,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class Reviewer {
-    public String displayName;
-    public String profilePhotoUrl;
-    public boolean isAnonymous;
+    private String displayName;
+    private String profilePhotoUrl;
+    private boolean isAnonymous;
 }
