@@ -27,6 +27,7 @@ public class MockBusinessService implements BusinessProvider {
     public List<Map<String, Object>> fetchLocations(String accountId, String accessToken) {
         return List.of(
                 Map.of("name", accountId + "/locations/loc-paris", "title", "Le Petit Bistro - Paris"),
+                Map.of("name", accountId + "/locations/loc-bordeaux", "title", "Le Petit Bistro - Bordeaux"),
                 Map.of("name", accountId + "/locations/loc-lyon", "title", "Le Petit Bistro - Lyon")
         );
     }

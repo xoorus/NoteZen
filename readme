@@ -1,20 +1,7 @@
-- Archi hexa
-- Mock google review data
-- profile dev tape sur mock
-- CRUD reviews
-- Archi hexa
+TODO :
 
-A. Automatiser le rafraîchissement du Token
-Dans GoogleReviewService.java, la méthode getReviewsForUser utilise le token tel quel.
-Si le token a expiré (généralement après 1h), l'appel à Google échouera avec une erreur 401.
+N'afficher que les locationsID qui sont enregistrés dans le site
+N'afficher que les avis de - 15J
+DB SQLite ou autre à installer sur serveur et à utiliser en profil prod
 
-Suggestion : Modifie getReviewsForUser pour qu'il vérifie la validité ou tente un refresh en cas d'erreur.
-
-B. Harmoniser les IDs
-Dans noteZenReviewController, tu récupères un userId (Long) depuis le JWT interne.
-Dans ReviewManager, tu récupères l'utilisateur via ce userId.
-C'est parfait, c'est la bonne façon de lier ton utilisateur local à ses credentials Google.
-
-C. Injection de dépendances
-Pense à ajouter @Autowired ou (mieux) utilise l'injection par constructeur avec l'annotation @RequiredArgsConstructor de Lombok pour alléger le code des constructeurs.
-
+CI / CD Angular
