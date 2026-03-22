@@ -1,7 +1,10 @@
 package com.bchev.notezen.application.controller;
 
+import com.bchev.notezen.application.controller.dto.StarRatingDTO;
 import com.bchev.notezen.application.web.google.GoogleAuthManager;
+import com.bchev.notezen.domain.model.LightReview;
 import com.bchev.notezen.domain.model.Review;
+import com.bchev.notezen.domain.model.StarRating;
 import com.bchev.notezen.domain.repository.UserEntity;
 import com.bchev.notezen.domain.repository.UserRepository;
 import com.bchev.notezen.domain.service.AiService;
@@ -34,21 +37,12 @@ public class AiController {
 
     @PostMapping("/suggest")
     public SuggestionResponse suggestReply(
-            @RequestParam String email,
-            @RequestParam String locationId,
-            @RequestParam String reviewId) {
+            @RequestParam String name,
+            @RequestParam String reviewerName,
+            @RequestParam StarRatingDTO starRating,
+            @RequestParam String comment) {
 
-        UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'email : " + email));
-
-        List<Review> reviews = reviewManager.getReviewsForUser(user.getId(), locationId, googleAuthManager);
-
-        Review review = reviews.stream()
-                .filter(r -> r.getReviewId().equals(reviewId))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Avis non trouvé"));
-
-        String suggestion = aiService.suggestResponse(review);
+        String suggestion = aiService.suggestResponse(new LightReview(name, reviewerName, StarRating.valueOf(starRating.name()), comment));
         return new SuggestionResponse(suggestion);
     }
 

@@ -1,5 +1,6 @@
 package com.bchev.notezen.infrastructure.external.ai;
 
+import com.bchev.notezen.domain.model.LightReview;
 import com.bchev.notezen.domain.model.Review;
 import com.bchev.notezen.domain.service.AiService;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +25,7 @@ public class GeminiAiService implements AiService {
     private final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=";
 
     @Override
-    public String suggestResponse(Review review) {
+    public String suggestResponse(LightReview review) {
         // 1. Construction du Prompt (le secret d'une bonne IA)
         String prompt = String.format(
                 "Tu es le gérant d'un établissement. Réponds de manière professionnelle, courte et courtoise à l'avis suivant :\n" +
@@ -32,7 +33,7 @@ public class GeminiAiService implements AiService {
                         "Note : %s étoiles\n" +
                         "Commentaire : %s\n\n" +
                         "Consignes : Si l'avis est positif, remercie. Si l'avis est négatif, sois empathique et propose de discuter. Ne dépasse pas 3 phrases.",
-                review.getReviewer().getDisplayName(),
+                review.getReviewerName(),
                 review.getStarRating(),
                 review.getComment() != null ? review.getComment() : "L'utilisateur n'a pas laissé de texte, remercie juste pour la note."
         );
