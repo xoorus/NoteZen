@@ -9,7 +9,7 @@ import lombok.Getter;
 public class ReviewerDTO {
     private String displayName;
     private String profilePhotoUrl;
-    private boolean isAnonymous;
+    private Boolean isAnonymous;
 
     public static Reviewer toReviewer(ReviewerDTO reviewerDTO) {
         return new Reviewer(reviewerDTO.getDisplayName(), reviewerDTO.getProfilePhotoUrl(), reviewerDTO.isAnonymous);

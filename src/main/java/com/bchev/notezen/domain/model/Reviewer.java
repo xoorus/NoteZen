@@ -10,5 +10,5 @@ import lombok.Setter;
 public class Reviewer {
     private String displayName;
     private String profilePhotoUrl;
-    private boolean isAnonymous;
+    private Boolean isAnonymous;
 }

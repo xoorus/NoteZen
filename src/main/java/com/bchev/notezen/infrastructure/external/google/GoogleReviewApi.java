@@ -34,6 +34,7 @@ public class GoogleReviewApi {
         String url = String.format(
                 "https://mybusiness.googleapis.com/v4/%s/%s/reviews",
                 accountId, locationId
+                // mb https://mybusinessbusinessinformation.googleapis.com/v1/
         );
 
         log.info("Appel Google Review API pour le compte {} et la location {}", accountId, locationId);

@@ -52,7 +52,23 @@ public class GoogleBusinessService implements BusinessProvider {
     @Override
     public List<Review> fetchReviews(String accountId, String locationId, String accessToken) {
         // Attention : locationId doit être le nom complet "locations/123..."
-        String url = String.format("https://mybusiness.googleapis.com/v4/%s/%s/reviews", accountId, locationId);
+        //String url = String.format("https://mybusiness.googleapis.com/v4/%s/%s/reviews", accountId, locationId);
+
+        //String url = String.format("https://mybusinessreviews.googleapis.com/v1/%s/reviews", locationId);
+        //String url = String.format("https://mybusinessreviews.googleapis.com/v1/%s/%s/reviews", accountId, locationId);
+
+         accountId = "114457987962708025894";
+         locationId = "5469430040332250327";
+
+// On construit le nom complet de la ressource attendu par l'API
+        String resourceName = String.format("accounts/%s/locations/%s", accountId, locationId);
+
+// L'URL finale
+       // String url = String.format("https://mybusinessreviews.googleapis.com/v1/%s/reviews", resourceName);
+        String url = String.format("https://mybusiness.googleapis.com/v4/accounts/%s/locations/%s/reviews", accountId, locationId);
+// Log pour vérifier (Copie cette URL dans ton navigateur pour tester si tu as un doute)
+        System.out.println("URL finale : " + url);
+
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(accessToken);
 
