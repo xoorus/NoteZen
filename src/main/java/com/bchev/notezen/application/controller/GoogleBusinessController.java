@@ -64,7 +64,7 @@ public class GoogleBusinessController {
         }
         return ResponseEntity.ok(Map.of("url", googleAuthService.getAuthorizationUrl()));
     }
-
+/*
     @GetMapping("/locations")
     public ResponseEntity<List<Map<String, Object>>> getLocations(
             @RequestHeader("Authorization") String authHeader) { // On utilise le Header, pas le Param
@@ -91,8 +91,8 @@ public class GoogleBusinessController {
         String token = authManager.getValidToken(user);
 
         return ResponseEntity.ok(businessProvider.fetchLocations(user.getGoogleAccountId(), token));
-    }
-
+    }*/
+/*
     @GetMapping("/reviews")
     public ResponseEntity<List<Review>> getReviews(
             @RequestHeader("Authorization") String authHeader, // Idem ici
@@ -119,9 +119,9 @@ public class GoogleBusinessController {
         // 3. Récupération d'un token Google valide (Refresh si besoin)
         String token = authManager.getValidToken(user);
 
-        List<Review> reviews = businessProvider.fetchReviews(user.getGoogleAccountId(), locationId, token);
+        List<Review> reviews = googleReviewManager.fetchReviews(user.getGoogleAccountId(), locationId, token);
         return ResponseEntity.ok(reviews);
-    }
+    }*/
 
     private boolean isLocalProfileActive() {
         return "local".equals(activeProfile);

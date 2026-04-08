@@ -9,7 +9,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
@@ -20,14 +22,34 @@ public class GoogleReviewManager {
 
     private final UserRepository userRepository;
     private final BusinessProvider businessProvider;
+/*
+    public List<Review> fetchReviews(String accountId, String locationId, String accessToken) {
+        List<Review> reviews = businessProvider.fetchReviews(accountId, locationId, accessToken);
+        Instant twoWeeksAgo = Instant.now().minus(14, ChronoUnit.DAYS);
+        log.info("getReviewsForUser / filtering on dateCreation");
+        return reviews.stream()
+                .filter(review -> {
+                    Instant createdAt = Instant.parse(review.getCreateTime());
+                    return createdAt.isAfter(twoWeeksAgo);
+                })
+                .toList();
+    }*/
 
     /**
      * Récupère les avis via le provider (Mock ou Réel).
      */
+
     public List<Review> getReviewsForUser(UserEntity user, String locationId, GoogleAuthManager googleAuthManager) {
         String validToken = googleAuthManager.getValidToken(user);
-        return businessProvider.fetchReviews(user.getGoogleAccountId(), locationId, validToken);
-    }
+        List<Review> reviews = businessProvider.fetchReviews(user.getGoogleAccountId(), locationId, validToken);
+        Instant twoWeeksAgo = Instant.now().minus(14, ChronoUnit.DAYS);
+        log.info("getReviewsForUser / filtering on dateCreation");
+        return reviews.stream()
+                .filter(review -> {
+                    Instant createdAt = Instant.parse(review.getCreateTime());
+                    return createdAt.isAfter(twoWeeksAgo);
+                })
+                .toList();    }
 
     /**
      * Logique de liaison de compte simplifiée pour le POC
