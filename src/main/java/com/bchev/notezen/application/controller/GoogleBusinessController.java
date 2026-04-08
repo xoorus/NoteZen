@@ -69,6 +69,7 @@ public class GoogleBusinessController {
     public ResponseEntity<List<Map<String, Object>>> getLocations(
             @RequestHeader("Authorization") String authHeader) { // On utilise le Header, pas le Param
 
+        log.info("GoogleBusinessController getLocations API");
         String email;
         String jwt = authHeader.replace("Bearer ", "");
 
@@ -96,6 +97,7 @@ public class GoogleBusinessController {
     public ResponseEntity<List<Review>> getReviews(
             @RequestHeader("Authorization") String authHeader, // Idem ici
             @RequestParam String locationId) {
+        log.info("GoogleBusinessController Authorization API");
 
         String email;
         String jwt = authHeader.replace("Bearer ", "");

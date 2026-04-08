@@ -25,6 +25,7 @@ public class MockBusinessService implements BusinessProvider {
 
     @Override
     public List<Map<String, Object>> fetchLocations(String accountId, String accessToken) {
+        log.info("fetchLocations");
         return List.of(
                 Map.of("name", accountId + "/locations/loc-paris", "title", "Le Petit Bistro - Paris"),
                 Map.of("name", accountId + "/locations/loc-bordeaux", "title", "Le Petit Bistro - Bordeaux"),
@@ -34,6 +35,7 @@ public class MockBusinessService implements BusinessProvider {
 
     @Override
     public List<Review> fetchReviews(String accountId, String locationId, String accessToken) {
+        log.info("fetchReviews");
         List<ReviewDTO> reviewsDTO = new ArrayList<>();
         if (locationId.contains("loc-paris")) {
             reviewsDTO.add(createReview("1", "Alice L.", "Excellent service, je recommande !", "FIVE"));
@@ -63,16 +65,19 @@ public class MockBusinessService implements BusinessProvider {
         reviewsDTO.add(createReview("19", "Mike", "ok 👍", "THREE"));
         reviewsDTO.add(createReview("20", "Aurélien G.", "Très déçu 😕 on m'avait conseillé cet endroit mais je pense que je suis tombé un mauvais jour. Personnel un peu débordé et service lent.", "TWO"));
 
+        log.info(reviewsDTO.size() + " avis trouvés");
         return reviewsDTO.stream().map(ReviewDTO::toReview).toList();
     }
 
     @Override
     public void postReply(String accountId, String locationId, String reviewId, String text, String accessToken) {
+        log.info("postReply");
         log.info("MOCK API [Google] : Réponse envoyée pour l'avis {} (Etablissement: {}). Message : {}",
                 reviewId, locationId, text);
     }
 
     private ReviewDTO createReview(String id, String author, String comment, String rating) {
+        log.info("createReview");
         ReviewDTO dto = new ReviewDTO();
         dto.setReviewId(id);
         dto.setReviewer(new ReviewerDTO(author, "", false));
