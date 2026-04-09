@@ -3,6 +3,7 @@ package com.bchev.notezen.domain.service;
 import com.bchev.notezen.application.controller.dto.GoogleTokenResponseDTO;
 import com.bchev.notezen.application.web.google.GoogleAuthManager;
 import com.bchev.notezen.domain.model.Review;
+import com.bchev.notezen.domain.model.ReviewPage;
 import com.bchev.notezen.domain.repository.UserEntity;
 import com.bchev.notezen.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -22,33 +24,50 @@ public class GoogleReviewManager {
 
     private final UserRepository userRepository;
     private final BusinessProvider businessProvider;
-/*
-    public List<Review> fetchReviews(String accountId, String locationId, String accessToken) {
-        List<Review> reviews = businessProvider.fetchReviews(accountId, locationId, accessToken);
-        Instant twoWeeksAgo = Instant.now().minus(14, ChronoUnit.DAYS);
-        log.info("getReviewsForUser / filtering on dateCreation");
-        return reviews.stream()
-                .filter(review -> {
-                    Instant createdAt = Instant.parse(review.getCreateTime());
-                    return createdAt.isAfter(twoWeeksAgo);
-                })
-                .toList();
-    }*/
-
-    /**
-     * Récupère les avis via le provider (Mock ou Réel).
-     */
 
     public List<Review> getReviewsForUser(UserEntity user, String locationId, GoogleAuthManager googleAuthManager) {
         String validToken = googleAuthManager.getValidToken(user);
-        List<Review> reviews = businessProvider.fetchReviews(user.getGoogleAccountId(), locationId, validToken);
         Instant twoWeeksAgo = Instant.now().minus(14, ChronoUnit.DAYS);
-        log.info("getReviewsForUser / filtering on dateCreation and reply null");
-        return reviews.stream()
-                .filter(review -> {
-                    Instant createdAt = Instant.parse(review.getCreateTime());
-                    return createdAt.isAfter(twoWeeksAgo);
-                })
+
+        List<Review> allRelevantReviews = new ArrayList<>();
+        String nextPageToken = null;
+        boolean keepFetching = true;
+
+        log.info("Début de la récupération exhaustive des avis pour les 14 derniers jours");
+
+        while (keepFetching) {
+            // 1. Appel d'une page (50 avis max)
+            ReviewPage page = businessProvider.fetchReviews(
+                    user.getGoogleAccountId(),
+                    locationId,
+                    validToken,
+                    nextPageToken
+            );
+
+            if (page.getReviews() == null || page.getReviews().isEmpty()) {
+                break;
+            }
+
+            // 2. Filtrage immédiat de la page pour voir si on continue
+            List<Review> pageReviews = page.getReviews();
+            allRelevantReviews.addAll(pageReviews);
+
+            // 3. On regarde le dernier avis de la page reçue
+            Review lastReviewOfPage = pageReviews.get(pageReviews.size() - 1);
+            Instant lastReviewDate = Instant.parse(lastReviewOfPage.getCreateTime());
+
+            // 4. Condition d'arrêt :
+            // Si le dernier avis de la page est déjà plus vieux que 14 jours,
+            // pas besoin de charger la page suivante.
+            nextPageToken = page.getNextPageToken();
+            if (nextPageToken == null || lastReviewDate.isBefore(twoWeeksAgo)) {
+                keepFetching = false;
+            }
+        }
+
+        // Filtre final de précision (pour éliminer les quelques avis trop vieux de la dernière page)
+        return allRelevantReviews.stream()
+                .filter(review -> Instant.parse(review.getCreateTime()).isAfter(twoWeeksAgo))
                 .filter(review -> review.getReviewReply() == null)
                 .toList();
     }

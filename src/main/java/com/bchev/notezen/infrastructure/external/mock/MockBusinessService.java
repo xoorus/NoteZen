@@ -5,6 +5,7 @@ import com.bchev.notezen.application.controller.dto.ReviewReplyDTO;
 import com.bchev.notezen.application.controller.dto.ReviewerDTO;
 import com.bchev.notezen.application.controller.dto.StarRatingDTO;
 import com.bchev.notezen.domain.model.Review;
+import com.bchev.notezen.domain.model.ReviewPage;
 import com.bchev.notezen.domain.service.BusinessProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -37,7 +38,7 @@ public class MockBusinessService implements BusinessProvider {
     }
 
     @Override
-    public List<Review> fetchReviews(String accountId, String locationId, String accessToken) {
+    public ReviewPage fetchReviews(String accountId, String locationId, String accessToken, String pageToken) {
         log.info("fetchReviews");
         Instant oneMonthAgo = Instant.now()
                 .atZone(ZoneId.systemDefault())
@@ -79,7 +80,7 @@ public class MockBusinessService implements BusinessProvider {
         reviewsDTO.add(createReview("20", "Aurélien G.", "Très déçu 😕 on m'avait conseillé cet endroit mais je pense que je suis tombé un mauvais jour. Personnel un peu débordé et service lent.", "TWO", now));
 
         log.info(reviewsDTO.size() + " avis trouvés");
-        return reviewsDTO.stream().map(ReviewDTO::toReview).toList();
+        return new ReviewPage(reviewsDTO.stream().map(ReviewDTO::toReview).toList(), null);
     }
 
     @Override

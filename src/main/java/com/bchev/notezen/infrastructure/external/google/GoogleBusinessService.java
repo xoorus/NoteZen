@@ -3,6 +3,7 @@ package com.bchev.notezen.infrastructure.external.google;
 import com.bchev.notezen.application.controller.dto.ListReviewsResponseDTO;
 import com.bchev.notezen.application.controller.dto.ReviewDTO;
 import com.bchev.notezen.domain.model.Review;
+import com.bchev.notezen.domain.model.ReviewPage;
 import com.bchev.notezen.domain.service.BusinessProvider;
 
 import lombok.extern.slf4j.Slf4j;
@@ -48,12 +49,12 @@ public class GoogleBusinessService implements BusinessProvider {
         ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers), Map.class);
         return (List<Map<String, Object>>) response.getBody().get("locations");
     }
-
+/*
     @Override
     public List<Review> fetchReviews(String accountId, String locationId, String accessToken) {
 
 
-        String url = String.format("https://mybusiness.googleapis.com/v4/accounts/%s/locations/%s/reviews", accountId, locationId);
+        String url = String.format("https://mybusiness.googleapis.com/v4/%s/%s/reviews", accountId, locationId);
         System.out.println("URL finale : " + url);
 
         HttpHeaders headers = new HttpHeaders();
@@ -61,6 +62,30 @@ public class GoogleBusinessService implements BusinessProvider {
 
         ListReviewsResponseDTO response = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers), ListReviewsResponseDTO.class).getBody();
         return response != null ? response.getReviews().stream().map(ReviewDTO::toReview).toList() : List.of();
+    }*/
+
+    @Override
+    public ReviewPage fetchReviews(String accountId, String locationId, String accessToken, String pageToken) {
+        // On ajoute pageSize=50 pour être au max et le pageToken si présent
+        String url = String.format("https://mybusiness.googleapis.com/v4/%s/%s/reviews?pageSize=50", accountId, locationId);
+        if (pageToken != null) {
+            url += "&pageToken=" + pageToken;
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+
+        ResponseEntity<ListReviewsResponseDTO> response = restTemplate.exchange(
+                url, HttpMethod.GET, new HttpEntity<>(headers), ListReviewsResponseDTO.class);
+
+        ListReviewsResponseDTO body = response.getBody();
+
+        // On retourne un objet contenant les avis mappés et le token suivant
+        List<Review> reviews = (body != null && body.getReviews() != null)
+                ? body.getReviews().stream().map(ReviewDTO::toReview).toList()
+                : List.of();
+
+        return new ReviewPage(reviews, body != null ? body.getNextPageToken() : null);
     }
 
     @Override
