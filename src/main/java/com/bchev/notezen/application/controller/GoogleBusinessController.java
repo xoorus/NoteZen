@@ -28,9 +28,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class GoogleBusinessController {
 
-    private final GoogleAuthManager authManager;
-    private final BusinessProvider businessProvider;
-    private final UserRepository userRepository;
     private final GoogleReviewManager googleReviewManager;
     private final GoogleAuthService googleAuthService;
 
@@ -126,4 +123,5 @@ public class GoogleBusinessController {
     private boolean isLocalProfileActive() {
         return "local".equals(activeProfile);
     }
+
 }

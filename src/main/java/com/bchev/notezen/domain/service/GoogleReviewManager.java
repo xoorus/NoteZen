@@ -43,13 +43,15 @@ public class GoogleReviewManager {
         String validToken = googleAuthManager.getValidToken(user);
         List<Review> reviews = businessProvider.fetchReviews(user.getGoogleAccountId(), locationId, validToken);
         Instant twoWeeksAgo = Instant.now().minus(14, ChronoUnit.DAYS);
-        log.info("getReviewsForUser / filtering on dateCreation");
+        log.info("getReviewsForUser / filtering on dateCreation and reply null");
         return reviews.stream()
                 .filter(review -> {
                     Instant createdAt = Instant.parse(review.getCreateTime());
                     return createdAt.isAfter(twoWeeksAgo);
                 })
-                .toList();    }
+                .filter(review -> review.getReviewReply() == null)
+                .toList();
+    }
 
     /**
      * Logique de liaison de compte simplifiée pour le POC

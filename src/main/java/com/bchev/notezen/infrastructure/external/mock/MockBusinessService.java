@@ -1,6 +1,7 @@
 package com.bchev.notezen.infrastructure.external.mock;
 
 import com.bchev.notezen.application.controller.dto.ReviewDTO;
+import com.bchev.notezen.application.controller.dto.ReviewReplyDTO;
 import com.bchev.notezen.application.controller.dto.ReviewerDTO;
 import com.bchev.notezen.application.controller.dto.StarRatingDTO;
 import com.bchev.notezen.domain.model.Review;
@@ -11,7 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.ZoneId;
-import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -46,16 +46,20 @@ public class MockBusinessService implements BusinessProvider {
         Instant now = java.time.Instant.now();
         
         List<ReviewDTO> reviewsDTO = new ArrayList<>();
-        if (locationId.contains("loc-paris")) {
-            reviewsDTO.add(createReview("1", "Alice L.", "Excellent service, je recommande !", "FIVE", now));
-            reviewsDTO.add(createReview("2", "Marc A.", "Un peu bruyant mais très bon.", "FOUR", now));
-        }
+        reviewsDTO.add(createReviewWithReply("1", "Alice L.", "REPLY Excellent service, je recommande !", "FIVE", now,
+                "Merci beaucoup Alice ! Au plaisir de vous revoir."));
+
+        reviewsDTO.add(createReviewWithReply("2", "Marc A.", "REPLY Un peu bruyant mais très bon.", "FOUR", now,
+                "Merci pour votre retour Marc, nous travaillons sur l'acoustique !"));
+
+        reviewsDTO.add(createReviewWithReply("21", "Thomas P.", "REPLY ONE MONTH AGO Déçu par l'accueil.", "TWO", oneMonthAgo,
+                "Nous sommes navrés, Thomas. Nous avons renforcé l'équipe depuis."));
+
         reviewsDTO.add(createReview("21", "Thomas P.", "ONE MONTH AGO Déçu par l'accueil.", "TWO", oneMonthAgo));
         reviewsDTO.add(createReview("22", "Jean Dupont", "ONE MONTH AGO Excellent accueil, je reviendrai !", "FIVE", oneMonthAgo));
         reviewsDTO.add(createReview("23", "Alice Martin", "ONE MONTH AGO Trop d'attente pour être servi...", "TWO", oneMonthAgo));
         reviewsDTO.add(createReview("24", "Julie Martin", "ONE MONTH AGO Super service 😊 je recommande !!", "FIVE", oneMonthAgo));
         reviewsDTO.add(createReview("25", "Kevin L.", "ONE MONTH AGO Good experience overall. Staff was friendly and the place was clean 👍", "FOUR", oneMonthAgo));
-        reviewsDTO.add(createReview("3", "Marc Dubois", "ONE MONTH AGO Franchement bof... j'attendais mieux pour le prix.", "TWO", oneMonthAgo));
         reviewsDTO.add(createReview("4", "Samantha K.", "ONE MONTH AGO Amazing place!! Will definitely come back next time I'm in town 🔥", "FIVE", oneMonthAgo));
         reviewsDTO.add(createReview("5", "Lucie Bernard", "ONE MONTH AGO Très bon accueil, par contre un peu d'attente. Mais bon ça valait le coup quand même 🙂", "FOUR", oneMonthAgo));
         reviewsDTO.add(createReview("6", "Tom R.", "ONE MONTH AGO Not bad. Nothing special but ok.", "THREE", oneMonthAgo));
@@ -93,6 +97,19 @@ public class MockBusinessService implements BusinessProvider {
         dto.setComment(comment);
         dto.setStarRating(StarRatingDTO.valueOf(rating));
         dto.setCreateTime(createTime.toString());
+        return dto;
+    }
+
+    // Méthode simulant un avis avec une réponse existante (Google My Business structure)
+    private ReviewDTO createReviewWithReply(String id, String author, String comment, String rating, Instant createTime, String replyText) {
+        ReviewDTO dto = createReview(id, author, comment, rating, createTime);
+
+        // Simulation du champ 'reviewReply' de l'API Google
+        ReviewReplyDTO reply = new ReviewReplyDTO();
+        reply.setComment(replyText);
+        reply.setUpdateTime(createTime.plusSeconds(3600).toString()); // Réponse 1h après
+        dto.setReviewReply(reply);
+
         return dto;
     }
 }
