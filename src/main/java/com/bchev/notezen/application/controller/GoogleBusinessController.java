@@ -3,6 +3,7 @@ package com.bchev.notezen.application.controller;
 import com.bchev.notezen.application.controller.dto.GoogleTokenResponseDTO;
 import com.bchev.notezen.application.web.google.GoogleAuthManager;
 import com.bchev.notezen.application.web.google.GoogleAuthService;
+import com.bchev.notezen.domain.helpers.TokenUtils;
 import com.bchev.notezen.domain.service.BusinessProvider;
 import com.bchev.notezen.domain.service.GoogleReviewManager;
 import com.bchev.notezen.domain.model.Review;
@@ -28,26 +29,26 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class GoogleBusinessController {
 
-    private final GoogleReviewManager googleReviewManager;
+    private final GoogleAuthManager googleAuthManager;
     private final GoogleAuthService googleAuthService;
 
     @Value("${spring.profiles.active:default}")
     private String activeProfile;
 
     @GetMapping("/callback")
-    public void callback(@RequestParam String code, HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public void callback(@RequestParam String code, HttpServletResponse response) throws IOException {
 
         log.info("callback");
         try {
-            GoogleTokenResponseDTO tokens = googleAuthService.exchangeCodeForTokens(code);
-            String email = googleAuthService.extractEmailFromToken(tokens.getIdToken());
-            log.info("email : {}", email);
-            googleReviewManager.linkAccount(email, tokens);
-            String frontendUrl = "http://localhost:4200/dashboard?token=" + tokens.getIdToken(); // Utilise l'ID Token comme JWT simple
+            UserEntity user = googleAuthManager.linkAccount(code);
+            String noteZenToken = TokenUtils.generateToken(user.getId());
+            String frontendUrl = "http://localhost:4200/dashboard?token=" + noteZenToken;
             response.sendRedirect(frontendUrl);
+            return;
         } catch (Exception e) {
             log.error(e.getMessage());
             log.error(Arrays.toString(e.getStackTrace()));
+            response.sendRedirect("http://localhost:4200/login?error=auth_failed");
         }
     }
 

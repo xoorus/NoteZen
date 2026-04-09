@@ -3,10 +3,13 @@ package com.bchev.notezen.domain.helpers;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+
+import java.util.Date;
 
 @Slf4j
 @Component
@@ -17,6 +20,15 @@ public class TokenUtils {
     @Value("${jwt.secret}")
     public void setSecretKey(String secret) {
         TokenUtils.secretKey = secret;
+    }
+
+    public static String generateToken(Long userId) {
+        return Jwts.builder()
+                .setSubject(userId.toString())
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 24h
+                .signWith(Keys.hmacShaKeyFor(secretKey.getBytes()), SignatureAlgorithm.HS256)
+                .compact();
     }
 
     public static Long getUserIdFrom(String token) {

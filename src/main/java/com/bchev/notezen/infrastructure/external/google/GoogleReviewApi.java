@@ -30,11 +30,9 @@ public class GoogleReviewApi {
      */
     public List<Review> getReviewsForUser(String accountId, String locationId, String googleToken) {
         // Construction de l'URL Google Business Profile API v4
-        // Format : https://mybusiness.googleapis.com/v4/accounts/{accId}/locations/{locId}/reviews
         String url = String.format(
                 "https://mybusiness.googleapis.com/v4/%s/%s/reviews",
                 accountId, locationId
-                // mb https://mybusinessbusinessinformation.googleapis.com/v1/
         );
 
         log.info("Appel Google Review API pour le compte {} et la location {}", accountId, locationId);

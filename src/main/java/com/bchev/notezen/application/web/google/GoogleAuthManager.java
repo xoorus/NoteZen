@@ -18,7 +18,8 @@ public class GoogleAuthManager {
     private final GoogleAuthService googleAuthService;
     private final BusinessProvider businessProvider;
 
-    public String linkAccount(String code) {
+
+    public UserEntity linkAccount(String code) {
         // 1. Échange du code contre les tokens (Access + Refresh + ID Token)
         GoogleTokenResponseDTO tokens = googleAuthService.exchangeCodeForTokens(code);
 
@@ -54,8 +55,7 @@ public class GoogleAuthManager {
         }
         user.setTokenExpiration(LocalDateTime.now().plusSeconds(tokens.getExpiresIn()));
 
-        userRepository.save(user);
-        return email;
+        return userRepository.save(user);
     }
 
     public String getValidToken(UserEntity user) {

@@ -57,7 +57,8 @@ public class RealGoogleAuthService implements GoogleAuthService {
                 "client_id=" + clientId +
                 "&redirect_uri=" + redirectUri +
                 "&response_type=code" +
-                "&scope=https://www.googleapis.com/auth/business.manage openid email" +
+                "&scope=https://www.googleapis.com/auth/business.manage openid " +
+                "https://www.googleapis.com/auth/userinfo.email " +
                 "&access_type=offline" +
                 "&prompt=consent";
     }
@@ -94,43 +95,4 @@ public class RealGoogleAuthService implements GoogleAuthService {
         }
     }
 
-    /*
-
-    @Override
-    public String getGoogleAccountId(String accessToken) {
-        String url = "https://mybusinessbusinessinformation.googleapis.com/v1/accounts";
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(accessToken);
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-        try {
-            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
-            List<Map<String, Object>> accounts = (List<Map<String, Object>>) response.getBody().get("accounts");
-
-            if (accounts != null && !accounts.isEmpty()) {
-                return (String) accounts.get(0).get("name");
-            }
-        } catch (Exception e) {
-            log.error("Erreur lors de la récupération du compte Google Business", e);
-        }
-        return null;
-    }
-
-    @Override
-    public List<Map<String, Object>> getGoogleLocations(String accountId, String accessToken) {
-        String url = "https://mybusinessbusinessinformation.googleapis.com/v1/" + accountId + "/locations?readMask=name,title,storeCode";
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(accessToken);
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
-
-        try {
-            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, entity, Map.class);
-            return (List<Map<String, Object>>) response.getBody().get("locations");
-        } catch (Exception e) {
-            log.error("Erreur lors de la récupération des établissements", e);
-            return List.of();
-        }
-    }*/
 }
