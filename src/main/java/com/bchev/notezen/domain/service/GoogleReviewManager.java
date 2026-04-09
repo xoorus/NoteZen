@@ -1,17 +1,14 @@
 package com.bchev.notezen.domain.service;
 
-import com.bchev.notezen.application.controller.dto.GoogleTokenResponseDTO;
 import com.bchev.notezen.application.web.google.GoogleAuthManager;
 import com.bchev.notezen.domain.model.Review;
 import com.bchev.notezen.domain.model.ReviewPage;
 import com.bchev.notezen.domain.repository.UserEntity;
-import com.bchev.notezen.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,94 +19,78 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class GoogleReviewManager {
 
-    private final UserRepository userRepository;
     private final BusinessProvider businessProvider;
 
     public List<Review> getReviewsForUser(UserEntity user, String locationId, GoogleAuthManager googleAuthManager) {
+        log.info("[GoogleReviewManager] Début récupération des avis pour le lieu: {}", locationId);
+
         String validToken = googleAuthManager.getValidToken(user);
-        Instant twoWeeksAgo = Instant.now().minus(14, ChronoUnit.DAYS);
+        Instant thresholdDate = Instant.now().minus(14, ChronoUnit.DAYS);
 
-        List<Review> allRelevantReviews = new ArrayList<>();
-        String nextPageToken = null;
-        boolean keepFetching = true;
+        List<Review> allReviews = fetchAllReviewsWithinTimeframe(user, locationId, validToken, thresholdDate);
 
-        log.info("Début de la récupération exhaustive des avis pour les 14 derniers jours");
+        List<Review> filteredReviews = filterUnrepliedReviews(allReviews, thresholdDate);
 
-        while (keepFetching) {
-            // 1. Appel d'une page (50 avis max)
-            ReviewPage page = businessProvider.fetchReviews(
-                    user.getGoogleAccountId(),
-                    locationId,
-                    validToken,
-                    nextPageToken
-            );
-
-            if (page.getReviews() == null || page.getReviews().isEmpty()) {
-                break;
-            }
-
-            // 2. Filtrage immédiat de la page pour voir si on continue
-            List<Review> pageReviews = page.getReviews();
-            allRelevantReviews.addAll(pageReviews);
-
-            // 3. On regarde le dernier avis de la page reçue
-            Review lastReviewOfPage = pageReviews.get(pageReviews.size() - 1);
-            Instant lastReviewDate = Instant.parse(lastReviewOfPage.getCreateTime());
-
-            // 4. Condition d'arrêt :
-            // Si le dernier avis de la page est déjà plus vieux que 14 jours,
-            // pas besoin de charger la page suivante.
-            nextPageToken = page.getNextPageToken();
-            if (nextPageToken == null || lastReviewDate.isBefore(twoWeeksAgo)) {
-                keepFetching = false;
-            }
-        }
-
-        // Filtre final de précision (pour éliminer les quelques avis trop vieux de la dernière page)
-        return allRelevantReviews.stream()
-                .filter(review -> Instant.parse(review.getCreateTime()).isAfter(twoWeeksAgo))
-                .filter(review -> review.getReviewReply() == null)
-                .toList();
-    }
-
-    /**
-     * Logique de liaison de compte simplifiée pour le POC
-     */
-    public void linkAccount(String email, GoogleTokenResponseDTO tokens) {
-        log.info("linking account");
-        UserEntity user = userRepository.findByEmail(email).orElseGet(() -> {
-            UserEntity newUser = new UserEntity();
-            newUser.setEmail(email);
-            return newUser;
-        });
-        log.info("user linked");
-
-        // Utilisation du provider pour récupérer l'ID (sera mocké si profil mock actif)
-        if (user.getGoogleAccountId() == null) {
-            log.info("no accountID for this user, fetching...");
-            String accountId = businessProvider.fetchAccountId(tokens.getAccessToken());
-            log.info(">>>> MON GOOGLE ACCOUNT ID : {} <<<<", accountId);
-            user.setGoogleAccountId(accountId);
-        }
-
-        user.setGoogleAccessToken(tokens.getAccessToken());
-        if (tokens.getRefreshToken() != null) {
-            log.info("setting refresh token");
-            user.setGoogleRefreshToken(tokens.getRefreshToken());
-        }
-        user.setTokenExpiration(LocalDateTime.now().plusSeconds(tokens.getExpiresIn()));
-
-        userRepository.save(user);
-    }
-
-    public List<Map<String, Object>> getLocations(UserEntity user, GoogleAuthManager googleAuthManager) {
-        String token = googleAuthManager.getValidToken(user);
-        return businessProvider.fetchLocations(user.getGoogleAccountId(), token);
+        log.info("[GoogleReviewManager] Fin de traitement. {} avis retenus (sans réponse, < 14 jours)", filteredReviews.size());
+        return filteredReviews;
     }
 
     public void replyToReview(UserEntity user, String locationId, String reviewId, String text, GoogleAuthManager googleAuthManager) {
         String token = googleAuthManager.getValidToken(user);
+        log.info("[GoogleReviewManager] Envoi de la réponse vers l'API Google pour l'avis {}", reviewId);
         businessProvider.postReply(user.getGoogleAccountId(), locationId, reviewId, text, token);
     }
 
+    public List<Map<String, Object>> getLocations(UserEntity user, GoogleAuthManager googleAuthManager) {
+        String token = googleAuthManager.getValidToken(user);
+        log.info("[GoogleReviewManager] Appel API Google pour lister les lieux de l'utilisateur {}", user.getEmail());
+        return businessProvider.fetchLocations(user.getGoogleAccountId(), token);
+    }
+
+
+    /**
+     * Gère la boucle de pagination pour récupérer tous les avis récents.
+     */
+    private List<Review> fetchAllReviewsWithinTimeframe(UserEntity user, String locationId, String token, Instant thresholdDate) {
+        List<Review> accumulatedReviews = new ArrayList<>();
+        String nextPageToken = null;
+        boolean shouldContinue = true;
+        int pageCount = 0;
+
+        while (shouldContinue) {
+            pageCount++;
+            log.info("[GoogleReviewManager] Récupération page {} (token: {})", pageCount, nextPageToken);
+
+            ReviewPage page = businessProvider.fetchReviews(user.getGoogleAccountId(), locationId, token, nextPageToken);
+
+            if (page.getReviews() == null || page.getReviews().isEmpty()) {
+                log.info("[GoogleReviewManager] Page vide reçue, arrêt de la récupération.");
+                break;
+            }
+
+            accumulatedReviews.addAll(page.getReviews());
+            nextPageToken = page.getNextPageToken();
+
+            // On vérifie si le dernier avis de la page est déjà trop vieux
+            shouldContinue = isLastReviewRecent(page.getReviews(), thresholdDate) && nextPageToken != null;
+        }
+
+        log.info("[GoogleReviewManager] Total collecté : {} avis sur {} pages", accumulatedReviews.size(), pageCount);
+        return accumulatedReviews;
+    }
+
+    private boolean isLastReviewRecent(List<Review> reviews, Instant thresholdDate) {
+        Review lastReview = reviews.get(reviews.size() - 1);
+        Instant lastReviewDate = Instant.parse(lastReview.getCreateTime());
+        boolean recent = lastReviewDate.isAfter(thresholdDate);
+        if (!recent) log.info("[GoogleReviewManager] Dernier avis de la page hors délai (>14j). On stoppe la pagination.");
+        return recent;
+    }
+
+    private List<Review> filterUnrepliedReviews(List<Review> reviews, Instant thresholdDate) {
+        return reviews.stream()
+                .filter(r -> Instant.parse(r.getCreateTime()).isAfter(thresholdDate))
+                .filter(r -> r.getReviewReply() == null)
+                .toList();
+    }
 }

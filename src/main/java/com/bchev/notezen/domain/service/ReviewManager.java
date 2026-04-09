@@ -5,52 +5,68 @@ import com.bchev.notezen.domain.model.Review;
 import com.bchev.notezen.domain.repository.UserEntity;
 import com.bchev.notezen.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class ReviewManager {
 
     private final UserRepository userRepository;
     private final GoogleReviewManager googleReviewManager;
 
-    /**
-     * Récupère la liste des avis pour un utilisateur interne NoteZen via son ID.
-     * Gère automatiquement la récupération du compte et la validité du token.
-     */
     public List<Review> getReviewsForUser(Long userId, String locationId, GoogleAuthManager googleAuthManager) {
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Utilisateur NoteZen non trouvé (ID: " + userId + ")"));
+        log.info("[ReviewManager] Demande de récupération des avis pour l'utilisateur ID: {}", userId);
+        UserEntity user = fetchUserOrThrow(userId);
 
-        if (user.getGoogleAccountId() != null) {
-            return googleReviewManager.getReviewsForUser(user, locationId, googleAuthManager);
-        }
-
-        return List.of();
-    }
-
-    public void replyToReview(Long userId, String locationId, String reviewId, String text, GoogleAuthManager googleAuthManager) {
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
-
-        if (user.getGoogleAccountId() != null) {
-            googleReviewManager.replyToReview(user, locationId, reviewId, text, googleAuthManager);
-        } else {
-            throw new IllegalStateException("Aucun compte Google Business lié à cet utilisateur NoteZen.");
-        }
-    }
-
-    public List<Map<String, Object>> getLocationsForUser(Long userId, GoogleAuthManager googleAuthManager ) {
-        UserEntity user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
-
-        if (user.getGoogleAccountId() == null) {
+        if (!hasGoogleAccountLinked(user)) {
+            log.warn("[ReviewManager] Aucun compte Google lié pour l'utilisateur {}", userId);
             return List.of();
         }
 
+        return googleReviewManager.getReviewsForUser(user, locationId, googleAuthManager);
+    }
+
+    public void replyToReview(Long userId, String locationId, String reviewId, String text, GoogleAuthManager googleAuthManager) {
+        log.info("[ReviewManager] Tentative de réponse à l'avis {} par l'utilisateur {}", reviewId, userId);
+        UserEntity user = fetchUserOrThrow(userId);
+
+        ensureGoogleAccountIsLinked(user);
+
+        googleReviewManager.replyToReview(user, locationId, reviewId, text, googleAuthManager);
+        log.info("[ReviewManager] Réponse transmise avec succès au GoogleReviewManager");
+    }
+
+    public List<Map<String, Object>> getLocationsForUser(Long userId, GoogleAuthManager googleAuthManager) {
+        log.info("[ReviewManager] Récupération des établissements pour l'utilisateur {}", userId);
+        UserEntity user = fetchUserOrThrow(userId);
+
+        if (!hasGoogleAccountLinked(user)) return List.of();
+
         return googleReviewManager.getLocations(user, googleAuthManager);
+    }
+
+
+    private UserEntity fetchUserOrThrow(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> {
+                    log.error("[ReviewManager] Utilisateur ID {} non trouvé en base", userId);
+                    return new RuntimeException("Utilisateur NoteZen non trouvé");
+                });
+    }
+
+    private boolean hasGoogleAccountLinked(UserEntity user) {
+        return user.getGoogleAccountId() != null;
+    }
+
+    private void ensureGoogleAccountIsLinked(UserEntity user) {
+        if (!hasGoogleAccountLinked(user)) {
+            log.error("[ReviewManager] Action impossible : l'utilisateur {} n'a pas de compte Google lié", user.getId());
+            throw new IllegalStateException("Aucun compte Google Business lié.");
+        }
     }
 }

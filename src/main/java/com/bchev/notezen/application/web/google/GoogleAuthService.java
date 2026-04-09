@@ -6,5 +6,4 @@ public interface GoogleAuthService {
     String getAuthorizationUrl();
     GoogleTokenResponseDTO exchangeCodeForTokens(String code);
     String refreshAccessToken(String refreshToken);
-    String extractEmailFromToken(String idToken);
 }

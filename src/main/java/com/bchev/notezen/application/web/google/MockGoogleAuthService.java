@@ -37,9 +37,4 @@ public class MockGoogleAuthService implements GoogleAuthService {
         return "fake-access-token-" + UUID.randomUUID();
     }
 
-    @Override
-    public String extractEmailFromToken(String idToken) {
-        log.info("[MOCK] Extraction de l'email pour le token : {}", idToken);
-        return "dev@notezen.fr";
-    }
 }

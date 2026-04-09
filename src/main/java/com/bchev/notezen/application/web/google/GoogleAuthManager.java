@@ -14,66 +14,111 @@ import java.time.LocalDateTime;
 @Service
 @RequiredArgsConstructor
 public class GoogleAuthManager {
+
+    private static final int TOKEN_EXPIRATION_MARGIN_MINUTES = 5;
+
     private final UserRepository userRepository;
     private final GoogleAuthService googleAuthService;
     private final BusinessProvider businessProvider;
 
-
+    /**
+     * Point d'entrée principal pour lier un compte Google après le callback OAuth.
+     */
     public UserEntity linkAccount(String code) {
-        // 1. Échange du code contre les tokens (Access + Refresh + ID Token)
         GoogleTokenResponseDTO tokens = googleAuthService.exchangeCodeForTokens(code);
+        validateTokens(tokens);
 
-        if (tokens == null || tokens.getIdToken() == null) {
-            throw new RuntimeException("ID Token manquant. Vérifiez vos scopes (openid email).");
-        }
+        String email = extractEmailFromIdToken(tokens.getIdToken());
+        UserEntity user = getOrCreateUserByEmail(email);
 
-        // 2. Extraction de l'email depuis le jeton ID
-        String email = com.auth0.jwt.JWT.decode(tokens.getIdToken()).getClaim("email").asString();
-
-        // 3. Récupération de l'utilisateur existant ou création d'un nouveau
-        UserEntity user = userRepository.findByEmail(email).orElse(new UserEntity());
-        user.setEmail(email);
-
-        // 4. LOGIQUE OPTIMISÉE POUR L'ACCOUNT ID On appelle Google Business que si on n'a pas déjà l'ID en base
-        if (user.getGoogleAccountId() == null || user.getGoogleAccountId().isEmpty()) {
-            try {
-                log.info("Récupération de l'Account ID auprès de Google pour {}", email);
-                String accountId = businessProvider.fetchAccountId(tokens.getAccessToken());
-                log.info(">>>> MON GOOGLE ACCOUNT ID : {} <<<<", accountId);
-                user.setGoogleAccountId(accountId);
-            } catch (Exception e) {
-                log.error("Impossible de récupérer l'Account ID (Quota 429 ?). Utilisation d'un ID temporaire.");
-            }
-        } else {
-            log.info("L'Account ID pour {} est déjà connu en base : {}", email, user.getGoogleAccountId());
-        }
-
-        // 5. Mise à jour des jetons et de l'expiration
-        user.setGoogleAccessToken(tokens.getAccessToken());
-        if (tokens.getRefreshToken() != null) {
-            user.setGoogleRefreshToken(tokens.getRefreshToken());
-        }
-        user.setTokenExpiration(LocalDateTime.now().plusSeconds(tokens.getExpiresIn()));
+        updateGoogleAccountDetails(user, tokens);
 
         return userRepository.save(user);
     }
 
+    /**
+     * Fournit un token d'accès valide, en le rafraîchissant si nécessaire.
+     */
     public String getValidToken(UserEntity user) {
-        // Vérification de l'expiration (ex: 5 minutes de marge)
-        if (user.getTokenExpiration() == null ||
-                user.getTokenExpiration().isBefore(LocalDateTime.now().plusMinutes(5))) {
-
-            log.info("Rafraîchissement du token pour : {}", user.getEmail());
-            String newToken = googleAuthService.refreshAccessToken(user.getGoogleRefreshToken());
-
-            user.setGoogleAccessToken(newToken);
-            // Google renvoie généralement une validité de 3600s
-            user.setTokenExpiration(LocalDateTime.now().plusHours(1));
-            userRepository.save(user);
-
-            return newToken;
+        if (isTokenExpired(user)) {
+            return refreshAndSaveToken(user);
         }
         return user.getGoogleAccessToken();
     }
 
+    private void validateTokens(GoogleTokenResponseDTO tokens) {
+        if (tokens == null || tokens.getIdToken() == null) {
+            throw new RuntimeException("Échec de l'authentification Google : ID Token manquant.");
+        }
+    }
+
+    private String extractEmailFromIdToken(String idToken) {
+        try {
+            return com.auth0.jwt.JWT.decode(idToken).getClaim("email").asString();
+        } catch (Exception e) {
+            throw new RuntimeException("Impossible de lire l'email dans l'ID Token", e);
+        }
+    }
+
+    private UserEntity getOrCreateUserByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseGet(() -> {
+                    log.info("Création d'un nouvel utilisateur NoteZen pour : {}", email);
+                    UserEntity newUser = new UserEntity();
+                    newUser.setEmail(email);
+                    return newUser;
+                });
+    }
+
+    private void updateGoogleAccountDetails(UserEntity user, GoogleTokenResponseDTO tokens) {
+        // Mise à jour de l'Account ID (si pas encore présent)
+        if (user.getGoogleAccountId() == null) {
+            syncGoogleAccountId(user, tokens.getAccessToken());
+        }
+
+        // Mise à jour des tokens
+        user.setGoogleAccessToken(tokens.getAccessToken());
+        if (tokens.getRefreshToken() != null) {
+            user.setGoogleRefreshToken(tokens.getRefreshToken());
+        }
+
+        // Calcul de l'expiration
+        user.setTokenExpiration(LocalDateTime.now().plusSeconds(tokens.getExpiresIn()));
+    }
+
+    private void syncGoogleAccountId(UserEntity user, String accessToken) {
+        try {
+            String accountId = businessProvider.fetchAccountId(accessToken);
+            user.setGoogleAccountId(accountId);
+            log.info("Account ID synchronisé pour {}: {}", user.getEmail(), accountId);
+        } catch (Exception e) {
+            log.error("Échec de récupération de l'Account ID Google pour {}", user.getEmail());
+            // Optionnel : ne pas bloquer si c'est juste un problème de quota
+        }
+    }
+
+    private boolean isTokenExpired(UserEntity user) {
+        if (user.getTokenExpiration() == null) return true;
+
+        // On considère expiré s'il reste moins de 5 minutes
+        return user.getTokenExpiration()
+                .isBefore(LocalDateTime.now().plusMinutes(TOKEN_EXPIRATION_MARGIN_MINUTES));
+    }
+
+    private String refreshAndSaveToken(UserEntity user) {
+        log.info("Le token Google pour {} est expiré. Tentative de rafraîchissement...", user.getEmail());
+
+        if (user.getGoogleRefreshToken() == null) {
+            throw new RuntimeException("Impossible de rafraîchir le token : Refresh Token absent.");
+        }
+
+        String newToken = googleAuthService.refreshAccessToken(user.getGoogleRefreshToken());
+
+        user.setGoogleAccessToken(newToken);
+        // On définit par défaut à 1h si l'API de refresh ne renvoie pas l'expiration
+        user.setTokenExpiration(LocalDateTime.now().plusHours(1));
+
+        userRepository.save(user);
+        return newToken;
+    }
 }

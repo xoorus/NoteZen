@@ -84,15 +84,4 @@ public class RealGoogleAuthService implements GoogleAuthService {
         return response != null ? response.getAccessToken() : null;
     }
 
-    @Override
-    public String extractEmailFromToken(String idToken) {
-        log.info("extract email from token {}", idToken);
-        try {
-            return JWT.decode(idToken).getClaim("email").asString();
-        } catch (Exception e) {
-            log.error("Erreur lors du décodage du jeton ID Google", e);
-            return null;
-        }
-    }
-
 }
