@@ -1,8 +1,10 @@
 package com.bchev.notezen.application.web.google;
 
 import com.bchev.notezen.application.controller.dto.GoogleTokenResponseDTO;
+import com.bchev.notezen.domain.exception.UnauthorizedUserAccess;
 import com.bchev.notezen.domain.repository.UserEntity;
 import com.bchev.notezen.domain.repository.UserRepository;
+import com.bchev.notezen.domain.service.AccessControlService;
 import com.bchev.notezen.domain.service.BusinessProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +22,7 @@ public class GoogleAuthManager {
     private final UserRepository userRepository;
     private final GoogleAuthService googleAuthService;
     private final BusinessProvider businessProvider;
+    private final AccessControlService accessControlService;
 
     /**
      * Point d'entrée principal pour lier un compte Google après le callback OAuth.
@@ -29,6 +32,10 @@ public class GoogleAuthManager {
         validateTokens(tokens);
 
         String email = extractEmailFromIdToken(tokens.getIdToken());
+        if (!accessControlService.isAuthorized(email)) {
+            log.error("[Auth] Connexion bloquée : {} n'est pas dans la liste autorisée.", email);
+            throw new UnauthorizedUserAccess("[Auth] Connexion bloquée :"+email+" n'est pas dans la liste autorisée.", email);
+        }
         UserEntity user = getOrCreateUserByEmail(email);
 
         updateGoogleAccountDetails(user, tokens);

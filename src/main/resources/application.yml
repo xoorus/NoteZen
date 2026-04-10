@@ -42,6 +42,9 @@ google:
 jwt:
   secret: "dummy_jwt"
 
+front:
+  url: "https://www.notezen.fr/"
+
 logging:
   level:
     ROOT: INFO

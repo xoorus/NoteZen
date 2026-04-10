@@ -10,6 +10,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
@@ -22,11 +23,9 @@ public class GeminiAiService implements AiService {
     @Value("${google.ai.api.key}")
     private String API_KEY;
 
-    private final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=";
-
+    private final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=";
     @Override
     public String suggestResponse(LightReview review) {
-        // 1. Construction du Prompt (le secret d'une bonne IA)
         String prompt = String.format(
                 "Tu es le gérant d'un établissement. Réponds de manière professionnelle, courte et courtoise à l'avis suivant :\n" +
                         "Client : %s\n" +
@@ -38,46 +37,61 @@ public class GeminiAiService implements AiService {
                 review.getComment() != null ? review.getComment() : "L'utilisateur n'a pas laissé de texte, remercie juste pour la note."
         );
 
-        // 2. Appel à l'API
-        return callGeminiApi(prompt);
+        return callGeminiWithRetry(prompt, 3);
+    }
+
+    private String callGeminiWithRetry(String prompt, int maxAttempts) {
+        int attempt = 0;
+        while (attempt < maxAttempts) {
+            try {
+                return callGeminiApi(prompt);
+            } catch (HttpServerErrorException.ServiceUnavailable e) {
+                attempt++;
+                log.warn("Tentative {}/{} : Gemini est indisponible (503). Nouvel essai dans 2s...", attempt, maxAttempts);
+                try {
+                    Thread.sleep(2000); // Pause de 2 secondes avant de réessayer
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                }
+            } catch (Exception e) {
+                log.error("Erreur critique lors de l'appel Gemini : ", e);
+                break;
+            }
+        }
+        return "L'assistant IA est temporairement surchargé. Veuillez réessayer dans un instant.";
     }
 
     private String callGeminiApi(String prompt) {
         RestTemplate restTemplate = new RestTemplate();
         String url = GEMINI_API_URL + API_KEY;
 
-        // 1. Headers
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        // 2. Structure JSON (La seule que Google accepte en v1)
-        Map<String, Object> textMap = Map.of("text", prompt);
-        Map<String, Object> partsMap = Map.of("parts", List.of(textMap));
-        Map<String, Object> body = Map.of("contents", List.of(partsMap));
+        // Construction du corps de la requête
+        Map<String, Object> body = Map.of(
+                "contents", List.of(
+                        Map.of("parts", List.of(
+                                Map.of("text", prompt)
+                        ))
+                )
+        );
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
 
-        try {
-            // Log de debug pour voir si l'URL est bien formée (sans espaces, etc.)
-            System.out.println("Tentative d'appel sur : " + url);
+        // postForEntity lancera une HttpServerErrorException.ServiceUnavailable en cas de 503
+        ResponseEntity<Map> responseEntity = restTemplate.postForEntity(url, entity, Map.class);
+        Map<String, Object> response = responseEntity.getBody();
 
-            // On utilise postForEntity pour avoir plus de détails sur la réponse
-            ResponseEntity<Map> responseEntity = restTemplate.postForEntity(url, entity, Map.class);
-            Map<String, Object> response = responseEntity.getBody();
-
-            if (response != null && response.containsKey("candidates")) {
-                List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
+        if (response != null && response.containsKey("candidates")) {
+            List<Map<String, Object>> candidates = (List<Map<String, Object>>) response.get("candidates");
+            if (!candidates.isEmpty()) {
                 Map<String, Object> content = (Map<String, Object>) candidates.get(0).get("content");
                 List<Map<String, Object>> parts = (List<Map<String, Object>>) content.get("parts");
                 return (String) parts.get(0).get("text");
             }
-
-        } catch (org.springframework.web.client.HttpClientErrorException.NotFound e) {
-            log.error("ERREUR 404 : Ce modèle n'existe pas ou l'URL est mal formée.");
-            log.error("Réponse de Google : {}", e.getResponseBodyAsString());
         }
 
         return "Erreur lors de la génération.";
     }
-
 }

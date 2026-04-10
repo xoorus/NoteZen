@@ -2,6 +2,7 @@ package com.bchev.notezen.application.controller;
 
 import com.bchev.notezen.application.web.google.GoogleAuthManager;
 import com.bchev.notezen.application.web.google.GoogleAuthService;
+import com.bchev.notezen.domain.exception.UnauthorizedUserAccess;
 import com.bchev.notezen.domain.helpers.TokenUtils;
 import com.bchev.notezen.domain.repository.UserEntity;
 import jakarta.servlet.http.HttpServletResponse;
@@ -38,10 +39,15 @@ public class GoogleBusinessController {
             String frontendUrl = "http://localhost:4200/dashboard?token=" + noteZenToken;
             response.sendRedirect(frontendUrl);
             return;
-        } catch (Exception e) {
+        } catch (UnauthorizedUserAccess e) {
+            response.sendRedirect("http://localhost:4200/unauthorized?email=" + e.getEmail());
+            return;
+        }
+        catch (Exception e) {
             log.error(e.getMessage());
             log.error(Arrays.toString(e.getStackTrace()));
             response.sendRedirect("http://localhost:4200/login?error=auth_failed");
+            return;
         }
     }
 
