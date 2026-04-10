@@ -29,6 +29,9 @@ public class GoogleBusinessController {
     @Value("${spring.profiles.active:default}")
     private String activeProfile;
 
+    @Value("${front.url}")
+    private String frontUrl;
+
     @GetMapping("/callback")
     public void callback(@RequestParam String code, HttpServletResponse response) throws IOException {
 
@@ -36,17 +39,17 @@ public class GoogleBusinessController {
         try {
             UserEntity user = googleAuthManager.linkAccount(code);
             String noteZenToken = TokenUtils.generateToken(user.getId());
-            String frontendUrl = "http://localhost:4200/dashboard?token=" + noteZenToken;
+            String frontendUrl = frontUrl+"dashboard?token=" + noteZenToken;
             response.sendRedirect(frontendUrl);
             return;
         } catch (UnauthorizedUserAccess e) {
-            response.sendRedirect("http://localhost:4200/unauthorized?email=" + e.getEmail());
+            response.sendRedirect(frontUrl+"unauthorized?email=" + e.getEmail());
             return;
         }
         catch (Exception e) {
             log.error(e.getMessage());
             log.error(Arrays.toString(e.getStackTrace()));
-            response.sendRedirect("http://localhost:4200/login?error=auth_failed");
+            response.sendRedirect(frontUrl+"login?error=auth_failed");
             return;
         }
     }
