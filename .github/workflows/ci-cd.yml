@@ -54,8 +54,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            sudo mkdir -p /opt/notezen/config
-            echo "${{ secrets.APP_PROD_YML }}" | sudo tee /opt/notezen/config/application-prod.yml > /dev/null
+            echo "${{ secrets.APP_PROD_YML }}" > /opt/notezen/config/application-prod.yml
 
       - name: Build Spring Boot
         run: mvn -B clean package -DskipTests
