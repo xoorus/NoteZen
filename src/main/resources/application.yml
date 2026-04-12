@@ -42,6 +42,9 @@ google:
 jwt:
   secret: "dummy_jwt"
 
+app:
+  version: "1.0.0"
+
 front:
   url: "https://www.notezen.fr/"
 

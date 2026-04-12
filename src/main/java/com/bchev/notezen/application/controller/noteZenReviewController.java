@@ -25,6 +25,8 @@ public class noteZenReviewController {
 
     private final ReviewManager reviewManager;
     private final GoogleAuthManager googleAuthManager;
+    @Value("${app.version}")
+    private String appVersion;
 
     @Value("${front.url}")
     private String frontUrl;
@@ -35,6 +37,13 @@ public class noteZenReviewController {
     }
 
     public record ReplyRequest(String text) {}
+
+    // ... constructeur
+
+    @GetMapping("/version")
+    public ResponseEntity<String> getVersion() {
+        return ResponseEntity.ok(appVersion);
+    }
 
     @PostMapping("/{reviewId}/reply")
     public ResponseEntity<Void> replyToReview(
