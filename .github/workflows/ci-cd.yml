@@ -47,6 +47,16 @@ jobs:
           java-version: '21'
           cache: 'maven'
 
+      - name: Create application-prod.yml
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            sudo mkdir -p /opt/notezen/config
+            echo "${{ secrets.APP_PROD_YML }}" | sudo tee /opt/notezen/config/application-prod.yml > /dev/null
+
       - name: Build Spring Boot
         run: mvn -B clean package -DskipTests
 
