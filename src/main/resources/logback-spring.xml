@@ -1,16 +1,10 @@
 <configuration>
-
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-        </encoder>
-    </appender>
+    <property name="LOG_HOME" value="${LOG_PATH:-logs}" />
 
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/notezen.log</file>
+        <file>${LOG_HOME}/notezen.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>logs/notezen.%d{yyyy-MM-dd}.log</fileNamePattern>
-            <maxHistory>30</maxHistory>
+            <fileNamePattern>${LOG_HOME}/notezen.%d{yyyy-MM-dd}.log</fileNamePattern>
         </rollingPolicy>
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>
@@ -18,10 +12,9 @@
     </appender>
 
     <appender name="JSON" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>/var/log/notezen/notezen-json.log</file>
+        <file>${LOG_HOME}/notezen-json.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>/var/log/notezen/notezen-json.%d{yyyy-MM-dd}.log</fileNamePattern>
-            <maxHistory>7</maxHistory>
+            <fileNamePattern>${LOG_HOME}/notezen-json.%d{yyyy-MM-dd}.log</fileNamePattern>
         </rollingPolicy>
         <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
     </appender>
@@ -31,7 +24,4 @@
         <appender-ref ref="FILE" />
         <appender-ref ref="JSON" />
     </root>
-
-    <logger name="com.bchev.notezen" level="DEBUG" />
-
 </configuration>

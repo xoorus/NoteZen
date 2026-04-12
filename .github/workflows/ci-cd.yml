@@ -23,7 +23,7 @@ jobs:
           cache: 'maven'
 
       - name: Build + Tests
-        run: mvn -B verify
+        run: mvn -B verify -DLOG_PATH=target/logs
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v2
