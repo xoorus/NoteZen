@@ -75,6 +75,5 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            sudo mkdir -p /opt/notezen
-            sudo mv /tmp/deploy/*.jar /opt/notezen/notezen.jar
+             mv /tmp/deploy/*.jar /opt/notezen/notezen.jar
             sudo systemctl restart notezen
