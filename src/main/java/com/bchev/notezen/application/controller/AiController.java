@@ -18,21 +18,15 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/ai")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = { "http://localhost:4200", "https://www.notezen.fr", "https://notezen.fr" })
 public class AiController {
 
     @Value("${google.ai.api.key}")
     private String apiKey;
     private final AiService aiService;
-    private final ReviewManager reviewManager;
-    private final UserRepository userRepository;
-    private final GoogleAuthManager googleAuthManager;
 
-    public AiController(AiService aiService, ReviewManager reviewManager, UserRepository userRepository, GoogleAuthManager googleAuthManager) {
+    public AiController(AiService aiService) {
         this.aiService = aiService;
-        this.reviewManager = reviewManager;
-        this.userRepository = userRepository;
-        this.googleAuthManager = googleAuthManager;
     }
 
     @PostMapping("/suggest")
@@ -57,7 +51,7 @@ public class AiController {
             List<Map<String, Object>> models = (List<Map<String, Object>>) response.get("models");
 
             return models.stream()
-                    .map(m -> (String) m.get("name")) // Récupère le nom technique (ex: models/gemini-1.5-flash)
+                    .map(m -> (String) m.get("name"))
                     .toList();
         } catch (Exception e) {
             return List.of("Erreur lors de la récupération des modèles : " + e.getMessage());

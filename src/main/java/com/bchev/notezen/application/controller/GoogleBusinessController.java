@@ -19,7 +19,7 @@ import java.util.Map;
 @Slf4j
 @RestController
 @RequestMapping("/api/google")
-@CrossOrigin(origins = "*", allowedHeaders = "*")
+@CrossOrigin(origins = { "http://localhost:4200", "https://www.notezen.fr", "https://notezen.fr" })
 @RequiredArgsConstructor
 public class GoogleBusinessController {
 
