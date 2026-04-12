@@ -77,3 +77,4 @@ jobs:
           script: |
             mv /tmp/deploy/*.jar /opt/notezen/notezen.jar
             sudo systemctl restart notezen
+            rm /tmp/deploy/*.jar
