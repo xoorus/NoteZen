@@ -38,8 +38,6 @@ public class noteZenReviewController {
 
     public record ReplyRequest(String text) {}
 
-    // ... constructeur
-
     @GetMapping("/version")
     public ResponseEntity<String> getVersion() {
         return ResponseEntity.ok(appVersion);

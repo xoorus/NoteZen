@@ -12,6 +12,7 @@ public class AccessControlService {
     // Pour l'instant en dur, mais pourra être injecté via @Value ou DB
     private final List<String> authorizedEmails = List.of(
             "admin@notezen.fr",
+            "dev@notezen.fr",
             "bchevriaut@gmail.ciw"
     );
 
