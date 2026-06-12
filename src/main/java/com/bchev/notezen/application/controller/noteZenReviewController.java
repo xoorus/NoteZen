@@ -25,6 +25,7 @@ public class noteZenReviewController {
 
     private final ReviewManager reviewManager;
     private final GoogleAuthManager googleAuthManager;
+
     @Value("${app.version}")
     private String appVersion;
 
