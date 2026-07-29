@@ -30,8 +30,10 @@
 		<java.version>21</java.version>
 		<sonar.organization>bastienche</sonar.organization>
 		<sonar.projectKey>bastienChe_NoteZen</sonar.projectKey>
-		<sonar.sources>src</sonar.sources>
-		<sonar.java.binaries>target</sonar.java.binaries>
+		<sonar.sources>src/main</sonar.sources>
+		<sonar.tests>src/test</sonar.tests>
+		<sonar.java.binaries>target/classes</sonar.java.binaries>
+		<sonar.java.test.binaries>target/test-classes</sonar.java.test.binaries>
 	</properties>
 	<dependencies>
 		<dependency>
