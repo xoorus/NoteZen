@@ -6,6 +6,7 @@ import com.bchev.notezen.domain.model.Review;
 import com.bchev.notezen.domain.model.ReviewPage;
 import com.bchev.notezen.domain.service.BusinessProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Qualifier("realBusinessProvider")
 @Slf4j
 @Profile("!local")
 public class GoogleBusinessService implements BusinessProvider {

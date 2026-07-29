@@ -8,7 +8,7 @@ import com.bchev.notezen.domain.model.Review;
 import com.bchev.notezen.domain.model.ReviewPage;
 import com.bchev.notezen.domain.service.BusinessProvider;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Profile;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -17,8 +17,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Toujours enregistré (aucun @Profile) : utilisé comme seul provider en profil "local",
+ * et comme provider de secours pour un utilisateur démo spécifique en prod (voir BusinessProviderResolver).
+ */
 @Service
-@Profile("local")
+@Qualifier("mockBusinessProvider")
 @Slf4j
 public class MockBusinessService implements BusinessProvider {
 

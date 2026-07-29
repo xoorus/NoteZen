@@ -5,7 +5,7 @@ import com.bchev.notezen.domain.exception.UnauthorizedUserAccess;
 import com.bchev.notezen.domain.repository.UserEntity;
 import com.bchev.notezen.domain.repository.UserRepository;
 import com.bchev.notezen.domain.service.AccessControlService;
-import com.bchev.notezen.domain.service.BusinessProvider;
+import com.bchev.notezen.domain.service.BusinessProviderResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -21,7 +21,7 @@ public class GoogleAuthManager {
 
     private final UserRepository userRepository;
     private final GoogleAuthService googleAuthService;
-    private final BusinessProvider businessProvider;
+    private final BusinessProviderResolver businessProviderResolver;
     private final AccessControlService accessControlService;
 
     /**
@@ -95,7 +95,7 @@ public class GoogleAuthManager {
 
     private void syncGoogleAccountId(UserEntity user, String accessToken) {
         try {
-            String accountId = businessProvider.fetchAccountId(accessToken);
+            String accountId = businessProviderResolver.resolve(user).fetchAccountId(accessToken);
             user.setGoogleAccountId(accountId);
             log.info("Account ID synchronisé pour {}: {}", user.getEmail(), accountId);
         } catch (Exception e) {

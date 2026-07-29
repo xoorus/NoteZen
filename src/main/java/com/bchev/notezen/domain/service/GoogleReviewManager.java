@@ -19,7 +19,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class GoogleReviewManager {
 
-    private final BusinessProvider businessProvider;
+    private final BusinessProviderResolver businessProviderResolver;
 
     public List<Review> getReviewsForUser(UserEntity user, String locationId, GoogleAuthManager googleAuthManager) {
         log.info("[GoogleReviewManager] Début récupération des avis pour le lieu: {}", locationId);
@@ -38,13 +38,13 @@ public class GoogleReviewManager {
     public void replyToReview(UserEntity user, String locationId, String reviewId, String text, GoogleAuthManager googleAuthManager) {
         String token = googleAuthManager.getValidToken(user);
         log.info("[GoogleReviewManager] Envoi de la réponse vers l'API Google pour l'avis {}", reviewId);
-        businessProvider.postReply(user.getGoogleAccountId(), locationId, reviewId, text, token);
+        businessProviderResolver.resolve(user).postReply(user.getGoogleAccountId(), locationId, reviewId, text, token);
     }
 
     public List<Map<String, Object>> getLocations(UserEntity user, GoogleAuthManager googleAuthManager) {
         String token = googleAuthManager.getValidToken(user);
         log.info("[GoogleReviewManager] Appel API Google pour lister les lieux de l'utilisateur {}", user.getEmail());
-        return businessProvider.fetchLocations(user.getGoogleAccountId(), token);
+        return businessProviderResolver.resolve(user).fetchLocations(user.getGoogleAccountId(), token);
     }
 
 
@@ -61,7 +61,7 @@ public class GoogleReviewManager {
             pageCount++;
             log.info("[GoogleReviewManager] Récupération page {} (token: {})", pageCount, nextPageToken);
 
-            ReviewPage page = businessProvider.fetchReviews(user.getGoogleAccountId(), locationId, token, nextPageToken);
+            ReviewPage page = businessProviderResolver.resolve(user).fetchReviews(user.getGoogleAccountId(), locationId, token, nextPageToken);
 
             if (page.getReviews() == null || page.getReviews().isEmpty()) {
                 log.info("[GoogleReviewManager] Page vide reçue, arrêt de la récupération.");
