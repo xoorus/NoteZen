@@ -119,7 +119,7 @@ public class SubscriptionManager {
         }
 
         Invoice stripeInvoice = stripeService.getInvoice(stripeInvoiceId);
-        String subscriptionId = (String) stripeInvoice.getSubscriptionObject().getId();
+        String subscriptionId = stripeInvoice.getSubscription();
 
         Optional<SubscriptionEntity> subscription = subscriptionRepository
                 .findByStripeSubscriptionId(subscriptionId);
@@ -159,7 +159,7 @@ public class SubscriptionManager {
         }
 
         Invoice stripeInvoice = stripeService.getInvoice(stripeInvoiceId);
-        String subscriptionId = (String) stripeInvoice.getSubscriptionObject().getId();
+        String subscriptionId = stripeInvoice.getSubscription();
 
         Optional<SubscriptionEntity> subscription = subscriptionRepository
                 .findByStripeSubscriptionId(subscriptionId);

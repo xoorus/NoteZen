@@ -181,12 +181,9 @@ class SubscriptionManagerTest {
     void handlePaymentSuccess_newInvoice_shouldRecordInvoiceAndActivateSubscription() throws StripeException {
         when(invoiceRepository.findByStripeInvoiceId("in_123")).thenReturn(Optional.empty());
 
-        Subscription linkedSubscription = new Subscription();
-        linkedSubscription.setId("sub_123");
-
         Invoice invoice = new Invoice();
         invoice.setId("in_123");
-        invoice.setSubscriptionObject(linkedSubscription);
+        invoice.setSubscription("sub_123");
         invoice.setAmountPaid(1990L);
         invoice.setCurrency("eur");
         invoice.setCreated(1_700_000_000L);
@@ -224,12 +221,9 @@ class SubscriptionManagerTest {
     void handlePaymentFailure_newInvoice_shouldRecordFailedInvoiceAndMarkPastDue() throws StripeException {
         when(invoiceRepository.findByStripeInvoiceId("in_456")).thenReturn(Optional.empty());
 
-        Subscription linkedSubscription = new Subscription();
-        linkedSubscription.setId("sub_123");
-
         Invoice invoice = new Invoice();
         invoice.setId("in_456");
-        invoice.setSubscriptionObject(linkedSubscription);
+        invoice.setSubscription("sub_123");
         invoice.setAmountDue(1990L);
         invoice.setCurrency("eur");
         when(stripeService.getInvoice("in_456")).thenReturn(invoice);
