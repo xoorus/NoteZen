@@ -1,19 +1,24 @@
 spring:
-  # Configuration H2
+  # Configuration Database (PostgreSQL en prod, H2 en dev)
   datasource:
-    url: jdbc:h2:mem:googledb
-    driverClassName: org.h2.Driver
-    username: sa
-    password: zeaz
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:googledb}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:zeaz}
+    driverClassName: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.h2.Driver}
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
+    database-platform: ${SPRING_JPA_DATABASE_PLATFORM:org.hibernate.dialect.H2Dialect}
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 20
+        order_inserts: true
   h2:
     console:
-      enabled: true
+      enabled: ${ENABLE_H2_CONSOLE:true}
       settings:
-        web-allow-others: true
+        web-allow-others: false
   security:
     oauth2:
       client:
@@ -49,6 +54,15 @@ app:
 front:
   url: "https://www.notezen.fr/"
 
+stripe:
+  api-key: ${STRIPE_API_KEY:}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  pricing:
+    monthly:
+      stripePriceId: ${STRIPE_PRICING_MONTHLY_PRICE_ID:}
+      trialDays: ${STRIPE_PRICING_TRIAL_DAYS:14}
+
 logging:
   level:
     ROOT: INFO
+    com.bchev.notezen: DEBUG
