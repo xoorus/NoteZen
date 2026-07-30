@@ -13,7 +13,7 @@ import org.springframework.web.client.RestTemplate;
 
 @Slf4j
 @Service
-@Profile("!local")
+@Profile("!mock")
 public class RealGoogleAuthService implements GoogleAuthService {
 
     @Value("${google.client-id}")

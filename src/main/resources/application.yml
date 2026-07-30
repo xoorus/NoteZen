@@ -1,66 +1,22 @@
 spring:
-  # Configuration Database (PostgreSQL en prod, H2 en dev)
-  datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:googledb}
-    username: ${SPRING_DATASOURCE_USERNAME:sa}
-    password: ${SPRING_DATASOURCE_PASSWORD:zeaz}
-    driverClassName: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.h2.Driver}
-  jpa:
-    database-platform: ${SPRING_JPA_DATABASE_PLATFORM:org.hibernate.dialect.H2Dialect}
-    hibernate:
-      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
-    properties:
-      hibernate:
-        jdbc:
-          batch_size: 20
-        order_inserts: true
-  h2:
-    console:
-      enabled: ${ENABLE_H2_CONSOLE:true}
-      settings:
-        web-allow-others: false
+  profiles:
+    active: local
+  application:
+    name: NoteZen
   security:
     oauth2:
       client:
         registration:
           google:
-            client-id: "dummy_id"
-            client-secret: "dummy_secret"
             scope:
               - openid
               - profile
               - email
-              - https://www.googleapis.com/auth/business.manage  # LE SCOPE CRUCIAL
+              - https://www.googleapis.com/auth/business.manage
             redirect-uri: "{baseUrl}/login/oauth2/code/google"
-
-
-  application:
-    name: NoteZen
-google:
-  client-id: "dummy_id"
-  client-secret: "dummy_secret"
-  redirect-uri: "http://localhost:8080/api/google/callback"
-  ai:
-    api:
-      key: "dummy_key"
-
-jwt:
-  secret: "dummy_jwt"
 
 app:
   version: "1.2.1"
-  mock-user-email: "bchevriaut@gmail.com"
-
-front:
-  url: "https://www.notezen.fr/"
-
-stripe:
-  api-key: ${STRIPE_API_KEY:}
-  webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
-  pricing:
-    monthly:
-      stripePriceId: ${STRIPE_PRICING_MONTHLY_PRICE_ID:}
-      trialDays: ${STRIPE_PRICING_TRIAL_DAYS:14}
 
 logging:
   level:

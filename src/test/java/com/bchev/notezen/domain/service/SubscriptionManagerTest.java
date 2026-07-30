@@ -56,6 +56,7 @@ class SubscriptionManagerTest {
                 .id(1L)
                 .name("Pro")
                 .stripePriceId("price_123")
+                .trialDays(14)
                 .build();
     }
 
@@ -70,44 +71,81 @@ class SubscriptionManagerTest {
     }
 
     @Test
-    void startSubscription_newCustomer_shouldCreateStripeCustomerAndPersistSubscription() throws StripeException {
+    void startCheckout_newUser_shouldCreateStripeCustomerAndReturnCheckoutUrl() throws StripeException {
+        when(subscriptionPlanRepository.findByActiveTrue()).thenReturn(Optional.of(plan));
         when(subscriptionRepository.findByUser(user)).thenReturn(Optional.empty());
-        when(subscriptionRepository.save(any(SubscriptionEntity.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
 
         Customer customer = new Customer();
         customer.setId("cus_new");
-        when(stripeService.createCustomer("user@example.com", "user@example.com")).thenReturn(customer);
+        when(stripeService.createCustomer("user@example.com", null)).thenReturn(customer);
+
+        when(stripeService.createCheckoutSession("cus_new", "price_123", 14, "1",
+                "http://localhost:4200/dashboard", "http://localhost:4200/dashboard"))
+                .thenReturn("https://checkout.stripe.com/session_abc");
+
+        String url = subscriptionManager.startCheckout(user,
+                "http://localhost:4200/dashboard", "http://localhost:4200/dashboard");
+
+        assertEquals("https://checkout.stripe.com/session_abc", url);
+        verify(stripeService).createCustomer("user@example.com", null);
+    }
+
+    @Test
+    void startCheckout_userWithExistingSubscription_shouldReuseStripeCustomerId() throws StripeException {
+        when(subscriptionPlanRepository.findByActiveTrue()).thenReturn(Optional.of(plan));
+        SubscriptionEntity existing = SubscriptionEntity.builder()
+                .stripeCustomerId("cus_existing")
+                .status("past_due")
+                .build();
+        when(subscriptionRepository.findByUser(user)).thenReturn(Optional.of(existing));
+
+        when(stripeService.createCheckoutSession("cus_existing", "price_123", 14, "1",
+                "http://localhost:4200/dashboard", "http://localhost:4200/dashboard"))
+                .thenReturn("https://checkout.stripe.com/session_retry");
+
+        String url = subscriptionManager.startCheckout(user,
+                "http://localhost:4200/dashboard", "http://localhost:4200/dashboard");
+
+        assertEquals("https://checkout.stripe.com/session_retry", url);
+        verify(stripeService, never()).createCustomer(anyString(), any());
+    }
+
+    @Test
+    void startCheckout_noActivePlan_shouldThrowIllegalStateException() {
+        when(subscriptionPlanRepository.findByActiveTrue()).thenReturn(Optional.empty());
+
+        assertThrows(IllegalStateException.class,
+                () -> subscriptionManager.startCheckout(user, "url", "url"));
+    }
+
+    @Test
+    void persistSubscriptionFromCheckout_withTrial_shouldMapFieldsAndSave() {
+        when(subscriptionRepository.save(any(SubscriptionEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         Subscription stripeSub = stripeSubscription("sub_123", "trialing", 1_701_300_000L);
-        when(stripeService.createSubscription("cus_new", "price_123", 14)).thenReturn(stripeSub);
 
-        SubscriptionEntity result = subscriptionManager.startSubscription(user, plan, 14);
+        SubscriptionEntity result = subscriptionManager.persistSubscriptionFromCheckout(user, plan, stripeSub, "cus_new");
 
         assertEquals("cus_new", result.getStripeCustomerId());
         assertEquals("sub_123", result.getStripeSubscriptionId());
         assertEquals("trialing", result.getStatus());
         assertNotNull(result.getTrialEndDate());
-        verify(stripeService).createCustomer("user@example.com", "user@example.com");
+        verify(subscriptionRepository).save(result);
     }
 
     @Test
-    void startSubscription_existingCustomer_shouldReuseStripeCustomerIdAndSkipCustomerCreation() throws StripeException {
-        SubscriptionEntity existing = SubscriptionEntity.builder()
-                .stripeCustomerId("cus_existing")
-                .build();
-        when(subscriptionRepository.findByUser(user)).thenReturn(Optional.of(existing));
+    void persistSubscriptionFromCheckout_withoutTrial_shouldLeaveTrialEndDateNull() {
         when(subscriptionRepository.save(any(SubscriptionEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         Subscription stripeSub = stripeSubscription("sub_456", "active", null);
-        when(stripeService.createSubscription("cus_existing", "price_123", null)).thenReturn(stripeSub);
 
-        SubscriptionEntity result = subscriptionManager.startSubscription(user, plan, null);
+        SubscriptionEntity result = subscriptionManager.persistSubscriptionFromCheckout(user, plan, stripeSub, "cus_existing");
 
         assertEquals("cus_existing", result.getStripeCustomerId());
+        assertEquals("active", result.getStatus());
         assertNull(result.getTrialEndDate());
-        verify(stripeService, never()).createCustomer(anyString(), anyString());
     }
 
     @Test

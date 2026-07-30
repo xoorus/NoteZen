@@ -9,7 +9,7 @@ import java.util.UUID;
 
 @Slf4j
 @Service
-@Profile("local")
+@Profile("mock")
 public class MockGoogleAuthService implements GoogleAuthService {
 
     /**

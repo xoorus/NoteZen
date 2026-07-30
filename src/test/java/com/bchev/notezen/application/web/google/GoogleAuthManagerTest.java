@@ -3,10 +3,8 @@ package com.bchev.notezen.application.web.google;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.bchev.notezen.application.controller.dto.GoogleTokenResponseDTO;
-import com.bchev.notezen.domain.exception.UnauthorizedUserAccess;
 import com.bchev.notezen.domain.repository.UserEntity;
 import com.bchev.notezen.domain.repository.UserRepository;
-import com.bchev.notezen.domain.service.AccessControlService;
 import com.bchev.notezen.domain.service.BusinessProvider;
 import com.bchev.notezen.domain.service.BusinessProviderResolver;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,9 +33,6 @@ class GoogleAuthManagerTest {
     private BusinessProviderResolver businessProviderResolver;
 
     @Mock
-    private AccessControlService accessControlService;
-
-    @Mock
     private BusinessProvider businessProvider;
 
     private GoogleAuthManager googleAuthManager;
@@ -47,14 +42,15 @@ class GoogleAuthManagerTest {
         googleAuthManager = new GoogleAuthManager(
                 userRepository,
                 googleAuthService,
-                businessProviderResolver,
-                accessControlService
+                businessProviderResolver
         );
     }
 
     @Test
-    void linkAccount_withAuthorizedUser_shouldCreateAndSaveUser() throws UnauthorizedUserAccess {
-        // Given
+    void linkAccount_newUser_shouldCreateAndSaveUserRegardlessOfAuthorization() {
+        // linkAccount ne vérifie plus l'autorisation métier : cette responsabilité
+        // a été déplacée vers GoogleBusinessController, qui décide seulement de la
+        // redirection (dashboard vs unauthorized) une fois le compte/JWT créés.
         String code = "auth-code-123";
         String email = "user@example.com";
         String idToken = createIdToken(email);
@@ -72,7 +68,6 @@ class GoogleAuthManagerTest {
         newUser.setEmail(email);
 
         when(googleAuthService.exchangeCodeForTokens(code)).thenReturn(tokens);
-        when(accessControlService.isAuthorized(email)).thenReturn(true);
         when(userRepository.findByEmail(email)).thenReturn(Optional.empty());
         when(businessProviderResolver.resolve(any())).thenReturn(businessProvider);
         when(businessProvider.fetchAccountId(accessToken)).thenReturn("account-123");
@@ -85,29 +80,8 @@ class GoogleAuthManagerTest {
         assertNotNull(result);
         assertEquals(email, result.getEmail());
         verify(googleAuthService).exchangeCodeForTokens(code);
-        verify(accessControlService).isAuthorized(email);
         verify(userRepository).findByEmail(email);
         verify(userRepository).save(any(UserEntity.class));
-    }
-
-    @Test
-    void linkAccount_withUnauthorizedUser_shouldThrowException() {
-        // Given
-        String code = "auth-code-123";
-        String email = "unauthorized@example.com";
-        String idToken = createIdToken(email);
-
-        GoogleTokenResponseDTO tokens = new GoogleTokenResponseDTO();
-        tokens.setIdToken(idToken);
-
-        when(googleAuthService.exchangeCodeForTokens(code)).thenReturn(tokens);
-        when(accessControlService.isAuthorized(email)).thenReturn(false);
-
-        // When & Then
-        assertThrows(UnauthorizedUserAccess.class,
-                () -> googleAuthManager.linkAccount(code));
-
-        verify(userRepository, never()).save(any());
     }
 
     @Test
@@ -182,7 +156,7 @@ class GoogleAuthManagerTest {
     }
 
     @Test
-    void linkAccount_withExistingUser_shouldUpdateTokens() throws UnauthorizedUserAccess {
+    void linkAccount_withExistingUser_shouldUpdateTokens() {
         // Given
         String code = "auth-code-123";
         String email = "existing@example.com";
@@ -200,7 +174,6 @@ class GoogleAuthManagerTest {
         existingUser.setGoogleAccountId("account-123"); // Already linked
 
         when(googleAuthService.exchangeCodeForTokens(code)).thenReturn(tokens);
-        when(accessControlService.isAuthorized(email)).thenReturn(true);
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(existingUser));
         when(userRepository.save(any())).thenReturn(existingUser);
 

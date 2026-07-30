@@ -1,10 +1,8 @@
 package com.bchev.notezen.application.web.google;
 
 import com.bchev.notezen.application.controller.dto.GoogleTokenResponseDTO;
-import com.bchev.notezen.domain.exception.UnauthorizedUserAccess;
 import com.bchev.notezen.domain.repository.UserEntity;
 import com.bchev.notezen.domain.repository.UserRepository;
-import com.bchev.notezen.domain.service.AccessControlService;
 import com.bchev.notezen.domain.service.BusinessProviderResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,20 +20,18 @@ public class GoogleAuthManager {
     private final UserRepository userRepository;
     private final GoogleAuthService googleAuthService;
     private final BusinessProviderResolver businessProviderResolver;
-    private final AccessControlService accessControlService;
 
     /**
      * Point d'entrée principal pour lier un compte Google après le callback OAuth.
+     * Ne vérifie pas l'autorisation métier (allowlist/abonnement) : un compte et un
+     * JWT sont émis pour tout Google login réussi. L'accès aux fonctionnalités reste
+     * gardé par AccessControlService, revérifié à chaque appel
      */
     public UserEntity linkAccount(String code) {
         GoogleTokenResponseDTO tokens = googleAuthService.exchangeCodeForTokens(code);
         validateTokens(tokens);
 
         String email = extractEmailFromIdToken(tokens.getIdToken());
-        if (!accessControlService.isAuthorized(email)) {
-            log.error("[Auth] Connexion bloquée : {} n'est pas dans la liste autorisée.", email);
-            throw new UnauthorizedUserAccess("[Auth] Connexion bloquée :"+email+" n'est pas dans la liste autorisée.", email);
-        }
         UserEntity user = getOrCreateUserByEmail(email);
 
         updateGoogleAccountDetails(user, tokens);
@@ -61,8 +57,15 @@ public class GoogleAuthManager {
 
     private String extractEmailFromIdToken(String idToken) {
         try {
-            return com.auth0.jwt.JWT.decode(idToken).getClaim("email").asString();
+            var decoded = com.auth0.jwt.JWT.decode(idToken);
+            String email = decoded.getClaim("email").asString();
+            if (email == null || email.isEmpty()) {
+                log.error("Email claim is null or empty in ID Token. Claims: {}", decoded.getClaims().keySet());
+                throw new RuntimeException("Email not found in ID Token claims");
+            }
+            return email;
         } catch (Exception e) {
+            log.error("Failed to extract email from ID Token: {}", e.getMessage());
             throw new RuntimeException("Impossible de lire l'email dans l'ID Token", e);
         }
     }

@@ -8,7 +8,6 @@ import com.bchev.notezen.domain.helpers.TokenUtils;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
-import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,13 +17,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,9 +32,6 @@ class NoteZenReviewControllerTest {
 
     @Mock
     private GoogleAuthManager googleAuthManager;
-
-    @Mock
-    private HttpServletResponse response;
 
     private noteZenReviewController controller;
     private static final String TEST_SECRET = "test-secret-key-for-jwt-testing-1234567890ab";
@@ -60,7 +54,7 @@ class NoteZenReviewControllerTest {
     }
 
     @Test
-    void getReviews_withValidJwt_shouldReturnReviews() throws IOException, UnauthorizedUserAccess {
+    void getReviews_withValidJwt_shouldReturnReviews() {
         // Given
         String jwt = "Bearer " + generateValidToken(1L);
         String locationId = "location-123";
@@ -69,7 +63,7 @@ class NoteZenReviewControllerTest {
                 .thenReturn(List.of());
 
         // When
-        ResponseEntity<List<Review>> response = controller.getReviews(jwt, locationId, null);
+        ResponseEntity<List<Review>> response = controller.getReviews(jwt, locationId);
 
         // Then
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -77,7 +71,7 @@ class NoteZenReviewControllerTest {
     }
 
     @Test
-    void getReviews_withUnauthorizedUser_shouldReturnForbidden() throws IOException {
+    void getReviews_withUnauthorizedUser_shouldPropagateException() {
         // Given
         String jwt = "Bearer " + generateValidToken(1L);
         String locationId = "location-123";
@@ -86,16 +80,13 @@ class NoteZenReviewControllerTest {
         when(reviewManager.getReviewsForUser(1L, locationId, googleAuthManager))
                 .thenThrow(new UnauthorizedUserAccess("Not authorized", email));
 
-        // When
-        ResponseEntity<List<Review>> result = controller.getReviews(jwt, locationId, response);
-
-        // Then
-        assertEquals(HttpStatus.FORBIDDEN, result.getStatusCode());
-        verify(reviewManager).getReviewsForUser(1L, locationId, googleAuthManager);
+        // When & Then
+        assertThrows(UnauthorizedUserAccess.class,
+                () -> controller.getReviews(jwt, locationId));
     }
 
     @Test
-    void getLocations_withValidJwt_shouldReturnLocations() throws IOException, UnauthorizedUserAccess {
+    void getLocations_withValidJwt_shouldReturnLocations() {
         // Given
         String jwt = "Bearer " + generateValidToken(1L);
         Map<String, Object> location = Map.of("name", "location-123", "title", "Test Location");
@@ -104,7 +95,7 @@ class NoteZenReviewControllerTest {
                 .thenReturn(List.of(location));
 
         // When
-        ResponseEntity<List<Map<String, Object>>> response = controller.getLocations(jwt, null);
+        ResponseEntity<List<Map<String, Object>>> response = controller.getLocations(jwt);
 
         // Then
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -113,7 +104,7 @@ class NoteZenReviewControllerTest {
     }
 
     @Test
-    void getLocations_withUnauthorizedUser_shouldReturnForbidden() throws IOException {
+    void getLocations_withUnauthorizedUser_shouldPropagateException() {
         // Given
         String jwt = "Bearer " + generateValidToken(1L);
         String email = "unauthorized@example.com";
@@ -121,16 +112,13 @@ class NoteZenReviewControllerTest {
         when(reviewManager.getLocationsForUser(1L, googleAuthManager))
                 .thenThrow(new UnauthorizedUserAccess("Not authorized", email));
 
-        // When
-        ResponseEntity<List<Map<String, Object>>> result = controller.getLocations(jwt, response);
-
-        // Then
-        assertEquals(HttpStatus.FORBIDDEN, result.getStatusCode());
-        verify(reviewManager).getLocationsForUser(1L, googleAuthManager);
+        // When & Then
+        assertThrows(UnauthorizedUserAccess.class,
+                () -> controller.getLocations(jwt));
     }
 
     @Test
-    void replyToReview_withValidData_shouldSucceed() throws IOException, UnauthorizedUserAccess {
+    void replyToReview_withValidData_shouldSucceed() {
         // Given
         String jwt = "Bearer " + generateValidToken(1L);
         String locationId = "location-123";
@@ -139,7 +127,7 @@ class NoteZenReviewControllerTest {
         noteZenReviewController.ReplyRequest request = new noteZenReviewController.ReplyRequest(replyText);
 
         // When
-        ResponseEntity<Void> response = controller.replyToReview(jwt, locationId, reviewId, request, null);
+        ResponseEntity<Void> response = controller.replyToReview(jwt, locationId, reviewId, request);
 
         // Then
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -147,7 +135,7 @@ class NoteZenReviewControllerTest {
     }
 
     @Test
-    void replyToReview_withUnauthorizedUser_shouldReturnForbidden() throws IOException {
+    void replyToReview_withUnauthorizedUser_shouldPropagateException() {
         // Given
         String jwt = "Bearer " + generateValidToken(1L);
         String locationId = "location-123";
@@ -158,11 +146,9 @@ class NoteZenReviewControllerTest {
         doThrow(new UnauthorizedUserAccess("Not authorized", email))
                 .when(reviewManager).replyToReview(1L, locationId, reviewId, "text", googleAuthManager);
 
-        // When
-        ResponseEntity<Void> result = controller.replyToReview(jwt, locationId, reviewId, request, response);
-
-        // Then
-        assertEquals(HttpStatus.FORBIDDEN, result.getStatusCode());
+        // When & Then
+        assertThrows(UnauthorizedUserAccess.class,
+                () -> controller.replyToReview(jwt, locationId, reviewId, request));
     }
 
     private String generateValidToken(Long userId) {

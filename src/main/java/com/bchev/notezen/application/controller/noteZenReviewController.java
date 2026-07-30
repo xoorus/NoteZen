@@ -1,19 +1,14 @@
 package com.bchev.notezen.application.controller;
 
 import com.bchev.notezen.application.web.google.GoogleAuthManager;
-import com.bchev.notezen.domain.exception.UnauthorizedUserAccess;
 import com.bchev.notezen.domain.service.ReviewManager;
 import com.bchev.notezen.domain.helpers.TokenUtils;
 import com.bchev.notezen.domain.model.Review;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -28,9 +23,6 @@ public class noteZenReviewController {
 
     @Value("${app.version}")
     private String appVersion;
-
-    @Value("${front.url}")
-    private String frontUrl;
 
     public noteZenReviewController(ReviewManager reviewManager, GoogleAuthManager googleAuthManager) {
         this.reviewManager = reviewManager;
@@ -49,47 +41,25 @@ public class noteZenReviewController {
             @RequestHeader("Authorization") String jwt,
             @RequestParam String locationId,
             @PathVariable String reviewId,
-            @RequestBody ReplyRequest request,
-            HttpServletResponse response) throws IOException {
+            @RequestBody ReplyRequest request) {
         log.info("noteZenReviewController /{reviewId}/reply API");
         Long userId = TokenUtils.getUserIdFrom(jwt);
-        try {
-            reviewManager.replyToReview(userId, locationId, reviewId, request.text(), this.googleAuthManager);
-            return ResponseEntity.ok().build();
-        } catch (UnauthorizedUserAccess e) {
-            log.error("replyToReview - Accès refusé pour {}, redirection vers le front", e.getEmail());
-            response.sendRedirect(frontUrl+"/unauthorized?email=" + e.getEmail());
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        }
-
+        reviewManager.replyToReview(userId, locationId, reviewId, request.text(), this.googleAuthManager);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/reviews")
     public ResponseEntity<List<Review>> getReviews(@RequestHeader("Authorization") String jwt,
-                                                   @RequestParam String locationId,
-                                                    HttpServletResponse response) throws IOException {
+                                                   @RequestParam String locationId) {
         log.info("noteZenReviewController reviews API");
         Long userId = TokenUtils.getUserIdFrom(jwt);
-        try {
-            return ResponseEntity.ok(reviewManager.getReviewsForUser(userId, locationId, this.googleAuthManager));
-        } catch (UnauthorizedUserAccess e) {
-            log.error("getReviews - Accès refusé pour {}, redirection vers le front", e.getEmail());
-            response.sendRedirect(frontUrl+"unauthorized?email=" + e.getEmail());
-            return new ResponseEntity<>(new ArrayList<>(), HttpStatus.FORBIDDEN);
-        }
+        return ResponseEntity.ok(reviewManager.getReviewsForUser(userId, locationId, this.googleAuthManager));
     }
 
     @GetMapping("/locations")
-    public ResponseEntity<List<Map<String, Object>>> getLocations(@RequestHeader("Authorization") String jwt,
-                                                  HttpServletResponse response) throws IOException {
+    public ResponseEntity<List<Map<String, Object>>> getLocations(@RequestHeader("Authorization") String jwt) {
         log.info("noteZenReviewController locations API");
         Long userId = TokenUtils.getUserIdFrom(jwt);
-        try {
-            return ResponseEntity.ok(reviewManager.getLocationsForUser(userId, this.googleAuthManager));
-        } catch (UnauthorizedUserAccess e) {
-            log.error("getLocations - Accès refusé pour {}, redirection vers le front", e.getEmail());
-            response.sendRedirect(frontUrl+"unauthorized?email=" + e.getEmail());
-            return new ResponseEntity<>(new ArrayList<>(), HttpStatus.FORBIDDEN);
-        }
+        return ResponseEntity.ok(reviewManager.getLocationsForUser(userId, this.googleAuthManager));
     }
 }

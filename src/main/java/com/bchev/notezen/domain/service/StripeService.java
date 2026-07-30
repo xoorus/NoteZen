@@ -2,14 +2,14 @@ package com.bchev.notezen.domain.service;
 
 import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
-import com.stripe.model.*;
+import com.stripe.model.Customer;
+import com.stripe.model.Invoice;
+import com.stripe.model.Subscription;
 import com.stripe.net.RequestOptions;
-import com.stripe.net.Webhook;
-import com.stripe.param.*;
+import com.stripe.param.SubscriptionUpdateParams;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,9 +19,6 @@ public class StripeService {
 
     @Value("${stripe.api-key}")
     private String apiKey;
-
-    public StripeService() {
-    }
 
     private RequestOptions getRequestOptions() {
         return RequestOptions.builder()
@@ -43,27 +40,6 @@ public class StripeService {
         return customer;
     }
 
-    public Subscription createSubscription(String customerId, String priceId, Integer trialDays)
-            throws StripeException {
-        Stripe.apiKey = apiKey;
-
-        SubscriptionCreateParams.Builder paramsBuilder = SubscriptionCreateParams.builder()
-                .setCustomer(customerId)
-                .addItem(
-                        SubscriptionCreateParams.Item.builder()
-                                .setPrice(priceId)
-                                .build()
-                );
-
-        if (trialDays != null && trialDays > 0) {
-            paramsBuilder.setTrialPeriodDays(Long.valueOf(trialDays));
-        }
-
-        Subscription subscription = Subscription.create(paramsBuilder.build(), getRequestOptions());
-        log.info("Created Stripe subscription {} for customer {}", subscription.getId(), customerId);
-        return subscription;
-    }
-
     public Subscription getSubscription(String stripeSubscriptionId) throws StripeException {
         Stripe.apiKey = apiKey;
         Subscription subscription = Subscription.retrieve(stripeSubscriptionId, getRequestOptions());
@@ -81,16 +57,6 @@ public class StripeService {
         return invoice;
     }
 
-    public String constructWebhookEvent(String payload, String signature) throws StripeException {
-        Stripe.apiKey = apiKey;
-
-        String endpointSecret = apiKey;
-        Event event = Webhook.constructEvent(
-                payload, signature, endpointSecret);
-
-        return event.getType();
-    }
-
     public void cancelSubscription(String stripeSubscriptionId) throws StripeException {
         Stripe.apiKey = apiKey;
 
@@ -103,8 +69,9 @@ public class StripeService {
         log.info("Canceled Stripe subscription {}", stripeSubscriptionId);
     }
 
-    public String createCheckoutSession(String customerId, String priceId, String successUrl,
-                                       String cancelUrl) throws StripeException {
+    public String createCheckoutSession(String customerId, String priceId, Integer trialDays,
+                                         String clientReferenceId, String successUrl,
+                                         String cancelUrl) throws StripeException {
         Stripe.apiKey = apiKey;
 
         Map<String, Object> lineItem = new HashMap<>();
@@ -114,9 +81,14 @@ public class StripeService {
         Map<String, Object> params = new HashMap<>();
         params.put("mode", "subscription");
         params.put("customer", customerId);
+        params.put("client_reference_id", clientReferenceId);
         params.put("line_items", java.util.List.of(lineItem));
         params.put("success_url", successUrl);
         params.put("cancel_url", cancelUrl);
+
+        if (trialDays != null && trialDays > 0) {
+            params.put("subscription_data", Map.of("trial_period_days", trialDays));
+        }
 
         com.stripe.model.checkout.Session session = com.stripe.model.checkout.Session.create(params, getRequestOptions());
         log.info("Created Stripe checkout session {}", session.getId());

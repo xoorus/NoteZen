@@ -7,8 +7,8 @@ import com.bchev.notezen.domain.entity.SubscriptionEntity;
 import com.bchev.notezen.domain.entity.SubscriptionPlanEntity;
 import com.bchev.notezen.domain.entity.InvoiceEntity;
 import com.bchev.notezen.domain.repository.UserEntity;
-import com.bchev.notezen.domain.repository.SubscriptionRepository;
 import com.bchev.notezen.domain.repository.SubscriptionPlanRepository;
+import com.bchev.notezen.domain.repository.SubscriptionRepository;
 import com.bchev.notezen.domain.repository.InvoiceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,31 +30,41 @@ public class SubscriptionManager {
     private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final InvoiceRepository invoiceRepository;
 
-    @Transactional
-    public SubscriptionEntity startSubscription(UserEntity user, SubscriptionPlanEntity plan,
-                                               Integer trialDays) throws StripeException {
-        // Créer client Stripe si pas existe
-        String stripeCustomerId;
-        Optional<SubscriptionEntity> existingSubscription = subscriptionRepository.findByUser(user);
+    /**
+     * Démarre un Checkout Stripe pour un utilisateur non (ou plus) autorisé.
+     * Réutilise le Customer Stripe existant si l'utilisateur a déjà une
+     * subscription en base (ex: paiement précédent échoué), pour éviter de
+     * dupliquer des Customers Stripe à chaque tentative.
+     */
+    public String startCheckout(UserEntity user, String successUrl, String cancelUrl) throws StripeException {
+        SubscriptionPlanEntity plan = subscriptionPlanRepository.findByActiveTrue()
+                .orElseThrow(() -> new IllegalStateException("Aucun plan d'abonnement actif configuré"));
 
-        if (existingSubscription.isPresent()) {
-            stripeCustomerId = existingSubscription.get().getStripeCustomerId();
-        } else {
-            com.stripe.model.Customer customer = stripeService.createCustomer(
-                    user.getEmail(),
-                    user.getEmail()
-            );
-            stripeCustomerId = customer.getId();
-        }
+        Optional<SubscriptionEntity> existing = subscriptionRepository.findByUser(user);
+        String stripeCustomerId = existing.isPresent()
+                ? existing.get().getStripeCustomerId()
+                : stripeService.createCustomer(user.getEmail(), null).getId();
 
-        // Créer subscription Stripe
-        Subscription stripeSubscription = stripeService.createSubscription(
+        return stripeService.createCheckoutSession(
                 stripeCustomerId,
                 plan.getStripePriceId(),
-                trialDays
+                plan.getTrialDays(),
+                String.valueOf(user.getId()),
+                successUrl,
+                cancelUrl
         );
+    }
 
-        // Mapper les dates
+    /**
+     * Persiste la subscription en DB une fois le paiement confirmé côté Stripe
+     * (déclenché par le webhook checkout.session.completed). On ne crée jamais
+     * de SubscriptionEntity avant ce point : tant qu'aucun moyen de paiement
+     * n'est attaché, il n'y a rien à persister côté métier.
+     */
+    @Transactional
+    public SubscriptionEntity persistSubscriptionFromCheckout(UserEntity user, SubscriptionPlanEntity plan,
+                                                                Subscription stripeSubscription,
+                                                                String stripeCustomerId) {
         LocalDateTime currentPeriodStart = LocalDateTime.ofInstant(
                 Instant.ofEpochSecond(stripeSubscription.getCurrentPeriodStart()),
                 ZoneId.systemDefault()
@@ -72,7 +82,6 @@ public class SubscriptionManager {
             );
         }
 
-        // Créer ou mettre à jour entity DB
         SubscriptionEntity subscription = SubscriptionEntity.builder()
                 .user(user)
                 .subscriptionPlan(plan)
@@ -85,7 +94,8 @@ public class SubscriptionManager {
                 .build();
 
         subscription = subscriptionRepository.save(subscription);
-        log.info("Started subscription for user {} with plan {}", user.getId(), plan.getId());
+        log.info("Persisted subscription {} for user {} with plan {}",
+                subscription.getStripeSubscriptionId(), user.getId(), plan.getId());
         return subscription;
     }
 

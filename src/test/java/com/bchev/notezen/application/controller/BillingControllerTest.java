@@ -10,6 +10,7 @@ import com.bchev.notezen.domain.repository.UserRepository;
 import com.bchev.notezen.domain.service.StripeService;
 import com.bchev.notezen.domain.service.SubscriptionManager;
 import com.stripe.exception.CardException;
+import com.stripe.model.Subscription;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -26,13 +27,12 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.Base64;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -61,8 +61,7 @@ class BillingControllerTest {
 
         ReflectionTestUtils.setField(TokenUtils.class, "secretKey", TEST_JWT_SECRET);
         ReflectionTestUtils.setField(controller, "stripeWebhookSecret", WEBHOOK_SECRET);
-        ReflectionTestUtils.setField(controller, "stripePriceId", "price_123");
-        ReflectionTestUtils.setField(controller, "trialDays", 14);
+        ReflectionTestUtils.setField(controller, "frontUrl", "http://localhost:4200/");
     }
 
     private String tokenFor(Long userId) {
@@ -102,75 +101,70 @@ class BillingControllerTest {
     }
 
     @Test
-    void checkout_existingSubscription_shouldReturnAlreadySubscribedMessage() {
+    void checkout_existingActiveSubscription_shouldReturnAlreadySubscribedMessage() {
         Long userId = 1L;
         UserEntity user = new UserEntity();
         user.setId(userId);
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(subscriptionRepository.findByUser(user))
-                .thenReturn(Optional.of(SubscriptionEntity.builder().build()));
+        when(subscriptionManager.hasActiveSubscription(user)).thenReturn(true);
 
         ResponseEntity<?> response = controller.checkout(tokenFor(userId));
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals("User already has an active subscription", ((Map<?, ?>) response.getBody()).get("message"));
-        verifyNoInteractions(subscriptionManager);
+        verifyNoInteractions(stripeService);
     }
 
     @Test
-    void checkout_noPlanFound_shouldReturnNotFound() {
+    void checkout_noPlanConfigured_shouldReturnNotFound() throws Exception {
         Long userId = 1L;
+        String jwt = tokenFor(userId);
         UserEntity user = new UserEntity();
         user.setId(userId);
-        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(subscriptionRepository.findByUser(user)).thenReturn(Optional.empty());
-        when(subscriptionPlanRepository.findByActiveTrue()).thenReturn(Optional.empty());
 
-        ResponseEntity<?> response = controller.checkout(tokenFor(userId));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(subscriptionManager.hasActiveSubscription(user)).thenReturn(false);
+        when(subscriptionManager.startCheckout(eq(user), anyString(), anyString()))
+                .thenThrow(new IllegalStateException("Aucun plan d'abonnement actif configuré"));
+
+        ResponseEntity<?> response = controller.checkout(jwt);
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     }
 
     @Test
-    void checkout_success_shouldStartSubscriptionAndReturnDetails() throws Exception {
+    void checkout_success_shouldReturnCheckoutUrl() throws Exception {
         Long userId = 1L;
+        String jwt = tokenFor(userId);
         UserEntity user = new UserEntity();
         user.setId(userId);
-        SubscriptionPlanEntity plan = SubscriptionPlanEntity.builder().stripePriceId("price_123").build();
-        SubscriptionEntity created = SubscriptionEntity.builder()
-                .id(10L)
-                .stripeSubscriptionId("sub_123")
-                .status("trialing")
-                .build();
+        String expectedUrl = "http://localhost:4200/dashboard?token=" + jwt;
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(subscriptionRepository.findByUser(user)).thenReturn(Optional.empty());
-        when(subscriptionPlanRepository.findByActiveTrue()).thenReturn(Optional.of(plan));
-        when(subscriptionManager.startSubscription(user, plan, 14)).thenReturn(created);
+        when(subscriptionManager.hasActiveSubscription(user)).thenReturn(false);
+        when(subscriptionManager.startCheckout(user, expectedUrl, expectedUrl))
+                .thenReturn("https://checkout.stripe.com/session_abc");
 
-        ResponseEntity<?> response = controller.checkout(tokenFor(userId));
+        ResponseEntity<?> response = controller.checkout(jwt);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         Map<?, ?> body = (Map<?, ?>) response.getBody();
-        assertEquals(10L, body.get("subscriptionId"));
-        assertEquals("sub_123", body.get("stripeSubscriptionId"));
-        assertEquals("trialing", body.get("status"));
+        assertEquals("https://checkout.stripe.com/session_abc", body.get("checkoutUrl"));
     }
 
     @Test
     void checkout_stripeException_shouldReturnBadRequest() throws Exception {
         Long userId = 1L;
+        String jwt = tokenFor(userId);
         UserEntity user = new UserEntity();
         user.setId(userId);
-        SubscriptionPlanEntity plan = SubscriptionPlanEntity.builder().stripePriceId("price_123").build();
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(subscriptionRepository.findByUser(user)).thenReturn(Optional.empty());
-        when(subscriptionPlanRepository.findByActiveTrue()).thenReturn(Optional.of(plan));
-        when(subscriptionManager.startSubscription(any(), any(), any()))
+        when(subscriptionManager.hasActiveSubscription(user)).thenReturn(false);
+        when(subscriptionManager.startCheckout(eq(user), anyString(), anyString()))
                 .thenThrow(new CardException("Card declined", "req_1", null, null, null, null, null, null));
 
-        ResponseEntity<?> response = controller.checkout(tokenFor(userId));
+        ResponseEntity<?> response = controller.checkout(jwt);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
@@ -280,6 +274,55 @@ class BillingControllerTest {
         ResponseEntity<?> response = controller.handleWebhook("{}", "t=1,v1=invalid");
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void handleWebhook_checkoutSessionCompleted_shouldPersistSubscription() throws Exception {
+        String payload = "{"
+                + "\"id\":\"evt_4\","
+                + "\"object\":\"event\","
+                + "\"api_version\":\"" + com.stripe.Stripe.API_VERSION + "\","
+                + "\"type\":\"checkout.session.completed\","
+                + "\"data\":{\"object\":{\"id\":\"cs_123\",\"object\":\"checkout.session\","
+                + "\"client_reference_id\":\"1\",\"subscription\":\"sub_123\",\"customer\":\"cus_123\"}}"
+                + "}";
+
+        UserEntity user = new UserEntity();
+        user.setId(1L);
+        SubscriptionPlanEntity plan = SubscriptionPlanEntity.builder().id(1L).stripePriceId("price_123").build();
+        Subscription stripeSubscription = new Subscription();
+        stripeSubscription.setId("sub_123");
+
+        when(subscriptionRepository.findByStripeSubscriptionId("sub_123")).thenReturn(Optional.empty());
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(subscriptionPlanRepository.findByActiveTrue()).thenReturn(Optional.of(plan));
+        when(stripeService.getSubscription("sub_123")).thenReturn(stripeSubscription);
+
+        ResponseEntity<?> response = controller.handleWebhook(payload, signedPayload(payload));
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(subscriptionManager).persistSubscriptionFromCheckout(user, plan, stripeSubscription, "cus_123");
+    }
+
+    @Test
+    void handleWebhook_checkoutSessionCompleted_alreadyPersisted_shouldSkip() throws Exception {
+        String payload = "{"
+                + "\"id\":\"evt_5\","
+                + "\"object\":\"event\","
+                + "\"api_version\":\"" + com.stripe.Stripe.API_VERSION + "\","
+                + "\"type\":\"checkout.session.completed\","
+                + "\"data\":{\"object\":{\"id\":\"cs_123\",\"object\":\"checkout.session\","
+                + "\"client_reference_id\":\"1\",\"subscription\":\"sub_123\",\"customer\":\"cus_123\"}}"
+                + "}";
+
+        when(subscriptionRepository.findByStripeSubscriptionId("sub_123"))
+                .thenReturn(Optional.of(SubscriptionEntity.builder().build()));
+
+        ResponseEntity<?> response = controller.handleWebhook(payload, signedPayload(payload));
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verifyNoInteractions(subscriptionManager);
+        verify(stripeService, never()).getSubscription(anyString());
     }
 
     @Test

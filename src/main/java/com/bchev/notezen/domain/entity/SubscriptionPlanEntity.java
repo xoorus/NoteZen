@@ -26,7 +26,7 @@ public class SubscriptionPlanEntity {
     @Column(nullable = false, length = 3)
     private String currency;
 
-    @Column(nullable = false)
+    @Column(name = "billing_interval", nullable = false)
     private String interval;
 
     private Integer trialDays;
