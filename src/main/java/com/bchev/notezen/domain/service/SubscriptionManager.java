@@ -178,7 +178,7 @@ public class SubscriptionManager {
     }
 
     public Optional<SubscriptionEntity> getUserActiveSubscription(UserEntity user) {
-        return subscriptionRepository.findByUserAndStatus(user, "active");
+        return subscriptionRepository.findByUser(user);
     }
 
     public boolean hasActiveSubscription(UserEntity user) {

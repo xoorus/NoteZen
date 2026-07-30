@@ -46,9 +46,6 @@ public class BillingController {
     @Value("${stripe.pricing.monthly.trialDays:14}")
     private Integer trialDays;
 
-    @Value("${app.front-url}")
-    private String frontUrl;
-
     @PostMapping("/checkout")
     public ResponseEntity<?> checkout(@RequestHeader("Authorization") String jwt) {
         try {
