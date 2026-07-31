@@ -24,6 +24,7 @@ public class GeminiAiService implements AiService {
     private String API_KEY;
 
     private final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash-lite:generateContent?key=";
+    private final RestTemplate restTemplate = new RestTemplate();
     @Override
     public String suggestResponse(LightReview review) {
         String prompt = String.format(
@@ -62,7 +63,6 @@ public class GeminiAiService implements AiService {
     }
 
     private String callGeminiApi(String prompt) {
-        RestTemplate restTemplate = new RestTemplate();
         String url = GEMINI_API_URL + API_KEY;
 
         HttpHeaders headers = new HttpHeaders();

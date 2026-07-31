@@ -60,6 +60,11 @@ public class SubscriptionManager {
      * (déclenché par le webhook checkout.session.completed). On ne crée jamais
      * de SubscriptionEntity avant ce point : tant qu'aucun moyen de paiement
      * n'est attaché, il n'y a rien à persister côté métier.
+     *
+     * UserEntity → SubscriptionEntity est une relation unique (un seul abonnement
+     * par utilisateur) : si une ligne existe déjà (ex: retry après un past_due),
+     * on la met à jour plutôt que d'en insérer une nouvelle, sous peine de violer
+     * la contrainte unique sur user_id.
      */
     @Transactional
     public SubscriptionEntity persistSubscriptionFromCheckout(UserEntity user, SubscriptionPlanEntity plan,
@@ -82,16 +87,17 @@ public class SubscriptionManager {
             );
         }
 
-        SubscriptionEntity subscription = SubscriptionEntity.builder()
-                .user(user)
-                .subscriptionPlan(plan)
-                .stripeSubscriptionId(stripeSubscription.getId())
-                .stripeCustomerId(stripeCustomerId)
-                .status(stripeSubscription.getStatus())
-                .currentPeriodStart(currentPeriodStart)
-                .currentPeriodEnd(currentPeriodEnd)
-                .trialEndDate(trialEndDate)
-                .build();
+        SubscriptionEntity subscription = subscriptionRepository.findByUser(user)
+                .orElseGet(() -> SubscriptionEntity.builder().user(user).build());
+
+        subscription.setSubscriptionPlan(plan);
+        subscription.setStripeSubscriptionId(stripeSubscription.getId());
+        subscription.setStripeCustomerId(stripeCustomerId);
+        subscription.setStatus(stripeSubscription.getStatus());
+        subscription.setCurrentPeriodStart(currentPeriodStart);
+        subscription.setCurrentPeriodEnd(currentPeriodEnd);
+        subscription.setTrialEndDate(trialEndDate);
+        subscription.setCanceledAt(null);
 
         subscription = subscriptionRepository.save(subscription);
         log.info("Persisted subscription {} for user {} with plan {}",

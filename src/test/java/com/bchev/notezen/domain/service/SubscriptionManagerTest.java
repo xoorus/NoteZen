@@ -149,6 +149,32 @@ class SubscriptionManagerTest {
     }
 
     @Test
+    void persistSubscriptionFromCheckout_existingRow_shouldUpdateInPlaceInsteadOfInserting() {
+        // Retry après un past_due (carte refusée puis nouvelle tentative réussie) :
+        // la ligne existante doit être mise à jour, pas dupliquée (contrainte unique sur user_id).
+        SubscriptionEntity existing = SubscriptionEntity.builder()
+                .id(99L)
+                .user(user)
+                .stripeSubscriptionId("sub_old_failed")
+                .stripeCustomerId("cus_existing")
+                .status("past_due")
+                .canceledAt(null)
+                .build();
+        when(subscriptionRepository.findByUser(user)).thenReturn(Optional.of(existing));
+        when(subscriptionRepository.save(any(SubscriptionEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Subscription stripeSub = stripeSubscription("sub_new_retry", "active", null);
+
+        SubscriptionEntity result = subscriptionManager.persistSubscriptionFromCheckout(user, plan, stripeSub, "cus_existing");
+
+        assertEquals(99L, result.getId());
+        assertEquals("sub_new_retry", result.getStripeSubscriptionId());
+        assertEquals("active", result.getStatus());
+        verify(subscriptionRepository).save(existing);
+    }
+
+    @Test
     void syncSubscriptionStatus_statusChanged_shouldUpdateAndSave() throws StripeException {
         SubscriptionEntity subscription = SubscriptionEntity.builder()
                 .id(1L)
