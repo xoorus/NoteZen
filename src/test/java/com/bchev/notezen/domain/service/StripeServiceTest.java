@@ -6,7 +6,6 @@ import com.stripe.model.Invoice;
 import com.stripe.model.Subscription;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.RequestOptions;
-import com.stripe.param.SubscriptionUpdateParams;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -108,7 +107,7 @@ class StripeServiceTest {
     }
 
     @Test
-    void cancelSubscription_shouldRetrieveThenUpdateWithCancelAtPeriodEnd() throws StripeException {
+    void cancelSubscription_shouldRetrieveThenCancelImmediately() throws StripeException {
         try (MockedStatic<Subscription> mocked = mockStatic(Subscription.class)) {
             Subscription sub = mock(Subscription.class);
             mocked.when(() -> Subscription.retrieve(eq("sub_123"), any(RequestOptions.class)))
@@ -116,10 +115,7 @@ class StripeServiceTest {
 
             stripeService.cancelSubscription("sub_123");
 
-            ArgumentCaptor<SubscriptionUpdateParams> paramsCaptor =
-                    ArgumentCaptor.forClass(SubscriptionUpdateParams.class);
-            verify(sub).update(paramsCaptor.capture(), any(RequestOptions.class));
-            assertTrue(paramsCaptor.getValue().getCancelAtPeriodEnd());
+            verify(sub).cancel(anyMap(), any(RequestOptions.class));
         }
     }
 

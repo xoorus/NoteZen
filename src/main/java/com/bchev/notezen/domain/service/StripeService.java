@@ -6,7 +6,6 @@ import com.stripe.model.Customer;
 import com.stripe.model.Invoice;
 import com.stripe.model.Subscription;
 import com.stripe.net.RequestOptions;
-import com.stripe.param.SubscriptionUpdateParams;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -57,16 +56,17 @@ public class StripeService {
         return invoice;
     }
 
+    /**
+     * Annule immédiatement, pas à la fin de la période en cours : un client qui
+     * annule ne doit plus avoir accès tout de suite, pas continuer à profiter du
+     * service jusqu'à l'échéance (source de confusion, cf. incident constaté).
+     */
     public void cancelSubscription(String stripeSubscriptionId) throws StripeException {
         Stripe.apiKey = apiKey;
 
-        SubscriptionUpdateParams params = SubscriptionUpdateParams.builder()
-                .setCancelAtPeriodEnd(true)
-                .build();
-
         Subscription subscription = Subscription.retrieve(stripeSubscriptionId, getRequestOptions());
-        subscription.update(params, getRequestOptions());
-        log.info("Canceled Stripe subscription {}", stripeSubscriptionId);
+        subscription.cancel(new HashMap<>(), getRequestOptions());
+        log.info("Canceled Stripe subscription {} immediately", stripeSubscriptionId);
     }
 
     public String createCheckoutSession(String customerId, String priceId, Integer trialDays,

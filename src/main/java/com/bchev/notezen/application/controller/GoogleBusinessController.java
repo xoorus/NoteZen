@@ -57,9 +57,10 @@ public class GoogleBusinessController {
         }
 
         String noteZenToken = TokenUtils.generateToken(user.getId());
+        String dashboardUrl = frontUrl + "dashboard?token=" + noteZenToken + "&email=" + user.getEmail();
 
         if (isAuthorized(user.getEmail())) {
-            response.sendRedirect(frontUrl + "dashboard?token=" + noteZenToken);
+            response.sendRedirect(dashboardUrl);
             return;
         }
 
@@ -69,8 +70,8 @@ public class GoogleBusinessController {
             // le 401 sur les appels API l'y renverra automatiquement vers /unauthorized.
             String checkoutUrl = subscriptionManager.startCheckout(
                     user,
-                    frontUrl + "dashboard?token=" + noteZenToken,
-                    frontUrl + "dashboard?token=" + noteZenToken
+                    dashboardUrl,
+                    dashboardUrl
             );
             response.sendRedirect(checkoutUrl);
         } catch (Exception e) {
