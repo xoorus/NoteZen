@@ -13,11 +13,14 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.Map;
 
 /**
- * Convertit systématiquement en 401 toute défaillance d'authentification/autorisation
- * (JWT absent, malformé, expiré, ou compte non autorisé) sur les endpoints /api/**.
- * Sans ce handler, ces exceptions remontent en 500 selon le point où elles sont levées,
- * ce qui empêche le frontend de distinguer "erreur serveur" de "session invalide" et
- * donc de rediriger proprement vers /unauthorized.
+ * Sépare deux causes distinctes d'échec sur les endpoints /api/** que le frontend
+ * doit traiter différemment :
+ * - 401 : JWT absent/malformé/expiré → problème d'authentification, une reconnexion
+ *   Google silencieuse suffit à résoudre le problème.
+ * - 403 : token valide mais accès refusé (pas d'abonnement, paiement échoué, compte
+ *   non autorisé) → se reconnecter avec le même compte ne changerait rien, il faut
+ *   montrer la page d'abonnement.
+ * Sans ce handler, ces exceptions remontent en 500 selon le point où elles sont levées.
  */
 @Slf4j
 @RestControllerAdvice
@@ -33,7 +36,7 @@ public class ApiExceptionHandler {
     @ExceptionHandler({ UnauthorizedUserAccess.class, PaymentFailedException.class, SubscriptionCanceledException.class })
     public ResponseEntity<?> handleUnauthorizedAccess(RuntimeException e) {
         log.warn("[Security] Accès refusé : {}", e.getMessage());
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(Map.of("error", "Accès non autorisé, abonnement requis"));
     }
 }
