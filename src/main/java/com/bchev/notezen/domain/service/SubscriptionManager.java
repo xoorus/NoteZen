@@ -45,10 +45,15 @@ public class SubscriptionManager {
                 ? existing.get().getStripeCustomerId()
                 : stripeService.createCustomer(user.getEmail(), null).getId();
 
+        // Le trial n'est accordé qu'à la toute première souscription : une ligne
+        // existante (même annulée) signifie que l'utilisateur l'a déjà consommé,
+        // sinon un cycle annulation/réabonnement permettrait un usage gratuit illimité.
+        Integer trialDays = existing.isPresent() ? null : plan.getTrialDays();
+
         return stripeService.createCheckoutSession(
                 stripeCustomerId,
                 plan.getStripePriceId(),
-                plan.getTrialDays(),
+                trialDays,
                 String.valueOf(user.getId()),
                 successUrl,
                 cancelUrl

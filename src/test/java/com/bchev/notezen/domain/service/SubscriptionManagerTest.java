@@ -99,8 +99,8 @@ class SubscriptionManagerTest {
                 .build();
         when(subscriptionRepository.findByUser(user)).thenReturn(Optional.of(existing));
 
-        when(stripeService.createCheckoutSession("cus_existing", "price_123", 14, "1",
-                "http://localhost:4200/dashboard", "http://localhost:4200/dashboard"))
+        when(stripeService.createCheckoutSession(eq("cus_existing"), eq("price_123"), isNull(), eq("1"),
+                eq("http://localhost:4200/dashboard"), eq("http://localhost:4200/dashboard")))
                 .thenReturn("https://checkout.stripe.com/session_retry");
 
         String url = subscriptionManager.startCheckout(user,
@@ -108,6 +108,26 @@ class SubscriptionManagerTest {
 
         assertEquals("https://checkout.stripe.com/session_retry", url);
         verify(stripeService, never()).createCustomer(anyString(), any());
+    }
+
+    @Test
+    void startCheckout_userWithCanceledSubscription_shouldNotGrantTrialAgain() throws StripeException {
+        // Un utilisateur qui a déjà annulé un abonnement a déjà consommé son essai :
+        // pas de nouveau trial, même s'il repasse par un nouveau checkout.
+        when(subscriptionPlanRepository.findByActiveTrue()).thenReturn(Optional.of(plan));
+        SubscriptionEntity canceled = SubscriptionEntity.builder()
+                .stripeCustomerId("cus_existing")
+                .status("canceled")
+                .build();
+        when(subscriptionRepository.findByUser(user)).thenReturn(Optional.of(canceled));
+
+        when(stripeService.createCheckoutSession(eq("cus_existing"), eq("price_123"), isNull(), eq("1"),
+                anyString(), anyString()))
+                .thenReturn("https://checkout.stripe.com/session_no_trial");
+
+        String url = subscriptionManager.startCheckout(user, "url", "url");
+
+        assertEquals("https://checkout.stripe.com/session_no_trial", url);
     }
 
     @Test
