@@ -20,6 +20,7 @@ import java.util.Map;
 public class GoogleReviewManager {
 
     private final BusinessProviderResolver businessProviderResolver;
+    private final PlanFeatureResolver planFeatureResolver;
 
     public List<Review> getReviewsForUser(UserEntity user, String locationId, GoogleAuthManager googleAuthManager) {
         log.info("[GoogleReviewManager] Début récupération des avis pour le lieu: {}", locationId);
@@ -43,8 +44,13 @@ public class GoogleReviewManager {
 
     public List<Map<String, Object>> getLocations(UserEntity user, GoogleAuthManager googleAuthManager) {
         String token = googleAuthManager.getValidToken(user);
-        log.info("[GoogleReviewManager] Appel API Google pour lister les lieux de l'utilisateur {}", user.getEmail());
-        return businessProviderResolver.resolve(user).fetchLocations(user.getGoogleAccountId(), token);
+        log.info("[GoogleReviewManager] Appel API Google pour lister les lieux de l'utilisateur {} (plan: {})",
+                user.getEmail(), user.getPricingPlan());
+
+        List<Map<String, Object>> allLocations =
+            businessProviderResolver.resolve(user).fetchLocations(user.getGoogleAccountId(), token);
+
+        return planFeatureResolver.filterLocationsByPlan(user, allLocations);
     }
 
 

@@ -9,6 +9,7 @@ import com.bchev.notezen.domain.repository.UserEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.bchev.notezen.domain.model.PricingPlan;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -28,6 +29,9 @@ class GoogleReviewManagerTest {
     private BusinessProviderResolver businessProviderResolver;
 
     @Mock
+    private PlanFeatureResolver planFeatureResolver;
+
+    @Mock
     private GoogleAuthManager googleAuthManager;
 
     @Mock
@@ -40,20 +44,25 @@ class GoogleReviewManagerTest {
 
     @BeforeEach
     void setUp() {
-        googleReviewManager = new GoogleReviewManager(businessProviderResolver);
+        googleReviewManager = new GoogleReviewManager(businessProviderResolver, planFeatureResolver);
     }
 
     @Test
     void getLocations_shouldResolveProviderAndFetchLocations() {
         // Given
         UserEntity user = createUser("user@example.com");
+        user.setPricingPlan(PricingPlan.PROFESSIONAL);
+
         when(googleAuthManager.getValidToken(user)).thenReturn("valid-token");
         when(businessProviderResolver.resolve(user)).thenReturn(mockProvider);
+        List<Map<String, Object>> allLocations = List.of(
+                Map.of("name", "loc-1", "title", "Location 1"),
+                Map.of("name", "loc-2", "title", "Location 2")
+        );
         when(mockProvider.fetchLocations("account-123", "valid-token"))
-                .thenReturn(List.of(
-                        Map.of("name", "loc-1", "title", "Location 1"),
-                        Map.of("name", "loc-2", "title", "Location 2")
-                ));
+                .thenReturn(allLocations);
+        when(planFeatureResolver.filterLocationsByPlan(user, allLocations))
+                .thenReturn(allLocations); // Professional user sees all
 
         // When
         List<Map<String, Object>> locations = googleReviewManager.getLocations(user, googleAuthManager);
@@ -62,26 +71,34 @@ class GoogleReviewManagerTest {
         assertEquals(2, locations.size());
         verify(businessProviderResolver).resolve(user);
         verify(mockProvider).fetchLocations("account-123", "valid-token");
+        verify(planFeatureResolver).filterLocationsByPlan(user, allLocations);
     }
 
     @Test
-    void getLocations_withMockUser_shouldUseMockProvider() {
+    void getLocations_withStarterUser_shouldFilterTo1Location() {
         // Given
-        UserEntity user = createUser("bchevriaut@gmail.com");
+        UserEntity user = createUser("starter@example.com");
+        user.setPricingPlan(PricingPlan.STARTER);
+
         when(googleAuthManager.getValidToken(user)).thenReturn("token");
-        when(businessProviderResolver.resolve(user)).thenReturn(mockProvider);
-        List<Map<String, Object>> mockLocations = List.of(
-                Map.of("name", "mock-loc", "title", "Mock Location")
+        when(businessProviderResolver.resolve(user)).thenReturn(realProvider);
+        List<Map<String, Object>> allLocations = List.of(
+                Map.of("name", "loc-1", "title", "Location 1"),
+                Map.of("name", "loc-2", "title", "Location 2"),
+                Map.of("name", "loc-3", "title", "Location 3")
         );
-        when(mockProvider.fetchLocations("account-123", "token")).thenReturn(mockLocations);
+        when(realProvider.fetchLocations("account-123", "token")).thenReturn(allLocations);
+        List<Map<String, Object>> filtered = List.of(allLocations.get(0)); // Only first
+        when(planFeatureResolver.filterLocationsByPlan(user, allLocations))
+                .thenReturn(filtered);
 
         // When
         List<Map<String, Object>> result = googleReviewManager.getLocations(user, googleAuthManager);
 
         // Then
-        assertEquals(mockLocations, result);
-        verify(businessProviderResolver).resolve(user);
-        verify(mockProvider).fetchLocations(any(), any());
+        assertEquals(1, result.size());
+        assertEquals("loc-1", result.get(0).get("name"));
+        verify(planFeatureResolver).filterLocationsByPlan(user, allLocations);
     }
 
     @Test
