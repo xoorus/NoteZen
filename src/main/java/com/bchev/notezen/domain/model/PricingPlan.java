@@ -1,12 +1,12 @@
 package com.bchev.notezen.domain.model;
 
 public enum PricingPlan {
-    STARTER(19.90, 1, "starter"),
-    PROFESSIONAL(24.90, 999, "professional");
+    STARTER(19.90, 1, "price_1TywUBJCNseoIpqDAFOOvnhb"),
+    PROFESSIONAL(24.90, 999, "price_1U1NyAJCNseoIpqDOR3rLQC5");
 
     private final double monthlyPrice;
     private final int maxLocations;
-    private final String stripePriceId; // sera défini ultérieurement
+    private final String stripePriceId;
 
     PricingPlan(double monthlyPrice, int maxLocations, String stripePriceId) {
         this.monthlyPrice = monthlyPrice;
