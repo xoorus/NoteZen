@@ -7,7 +7,6 @@ import com.bchev.notezen.domain.entity.SubscriptionEntity;
 import com.bchev.notezen.domain.entity.SubscriptionPlanEntity;
 import com.bchev.notezen.domain.entity.InvoiceEntity;
 import com.bchev.notezen.domain.repository.UserEntity;
-import com.bchev.notezen.domain.repository.SubscriptionPlanRepository;
 import com.bchev.notezen.domain.repository.SubscriptionRepository;
 import com.bchev.notezen.domain.repository.InvoiceRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,19 +26,15 @@ public class SubscriptionManager {
 
     private final StripeService stripeService;
     private final SubscriptionRepository subscriptionRepository;
-    private final SubscriptionPlanRepository subscriptionPlanRepository;
     private final InvoiceRepository invoiceRepository;
 
     /**
-     * Démarre un Checkout Stripe pour un utilisateur non (ou plus) autorisé.
+     * Démarre un Checkout Stripe pour un utilisateur non (ou plus) autorisé, sur le plan choisi.
      * Réutilise le Customer Stripe existant si l'utilisateur a déjà une
      * subscription en base (ex: paiement précédent échoué), pour éviter de
      * dupliquer des Customers Stripe à chaque tentative.
      */
-    public String startCheckout(UserEntity user, String successUrl, String cancelUrl) throws StripeException {
-        SubscriptionPlanEntity plan = subscriptionPlanRepository.findByActiveTrue()
-                .orElseThrow(() -> new IllegalStateException("Aucun plan d'abonnement actif configuré"));
-
+    public String startCheckout(UserEntity user, SubscriptionPlanEntity plan, String successUrl, String cancelUrl) throws StripeException {
         Optional<SubscriptionEntity> existing = subscriptionRepository.findByUser(user);
         String stripeCustomerId = existing.isPresent()
                 ? existing.get().getStripeCustomerId()

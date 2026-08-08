@@ -31,6 +31,9 @@ public class SubscriptionPlanEntity {
 
     private Integer trialDays;
 
+    @Column(nullable = false)
+    private Integer maxLocations;
+
     @Column(unique = true)
     private String stripeProductId;
 

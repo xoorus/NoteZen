@@ -7,6 +7,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
@@ -16,10 +17,16 @@ import java.util.Date;
 public class TokenUtils {
 
     private static String secretKey;
+    private static Environment environment;
 
     @Value("${jwt.secret}")
     public void setSecretKey(String secret) {
         TokenUtils.secretKey = secret;
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public TokenUtils(Environment env) {
+        TokenUtils.environment = env;
     }
 
     public static String generateToken(Long userId) {
@@ -53,12 +60,27 @@ public class TokenUtils {
             throw new MalformedJwtException("Le format du token est invalide (points manquants)");
         }
 
+        // En local, accepter les tokens expirés (grosse tolérance de clock skew)
+        long clockSkewSeconds = isLocalProfile() ? 10000000 : 0;
+
         Claims claims = Jwts.parserBuilder()
                 .setSigningKey(Keys.hmacShaKeyFor(secretKey.getBytes()))
+                .setAllowedClockSkewSeconds(clockSkewSeconds)
                 .build()
                 .parseClaimsJws(cleanToken)
                 .getBody();
 
         return Long.parseLong(claims.getSubject());
+    }
+
+    private static boolean isLocalProfile() {
+        if (environment == null) return false;
+        String[] profiles = environment.getActiveProfiles();
+        for (String profile : profiles) {
+            if ("local".equals(profile)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

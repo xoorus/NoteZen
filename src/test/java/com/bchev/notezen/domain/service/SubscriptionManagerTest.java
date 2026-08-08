@@ -4,7 +4,6 @@ import com.bchev.notezen.domain.entity.InvoiceEntity;
 import com.bchev.notezen.domain.entity.SubscriptionEntity;
 import com.bchev.notezen.domain.entity.SubscriptionPlanEntity;
 import com.bchev.notezen.domain.repository.InvoiceRepository;
-import com.bchev.notezen.domain.repository.SubscriptionPlanRepository;
 import com.bchev.notezen.domain.repository.SubscriptionRepository;
 import com.bchev.notezen.domain.repository.UserEntity;
 import com.stripe.exception.StripeException;
@@ -34,8 +33,6 @@ class SubscriptionManagerTest {
     @Mock
     private SubscriptionRepository subscriptionRepository;
     @Mock
-    private SubscriptionPlanRepository subscriptionPlanRepository;
-    @Mock
     private InvoiceRepository invoiceRepository;
 
     private SubscriptionManager subscriptionManager;
@@ -46,7 +43,7 @@ class SubscriptionManagerTest {
     @BeforeEach
     void setUp() {
         subscriptionManager = new SubscriptionManager(
-                stripeService, subscriptionRepository, subscriptionPlanRepository, invoiceRepository);
+                stripeService, subscriptionRepository, invoiceRepository);
 
         user = new UserEntity();
         user.setId(1L);
@@ -72,7 +69,6 @@ class SubscriptionManagerTest {
 
     @Test
     void startCheckout_newUser_shouldCreateStripeCustomerAndReturnCheckoutUrl() throws StripeException {
-        when(subscriptionPlanRepository.findByActiveTrue()).thenReturn(Optional.of(plan));
         when(subscriptionRepository.findByUser(user)).thenReturn(Optional.empty());
 
         Customer customer = new Customer();
@@ -83,7 +79,7 @@ class SubscriptionManagerTest {
                 "http://localhost:4200/dashboard", "http://localhost:4200/dashboard"))
                 .thenReturn("https://checkout.stripe.com/session_abc");
 
-        String url = subscriptionManager.startCheckout(user,
+        String url = subscriptionManager.startCheckout(user, plan,
                 "http://localhost:4200/dashboard", "http://localhost:4200/dashboard");
 
         assertEquals("https://checkout.stripe.com/session_abc", url);
@@ -92,7 +88,6 @@ class SubscriptionManagerTest {
 
     @Test
     void startCheckout_userWithExistingSubscription_shouldReuseStripeCustomerId() throws StripeException {
-        when(subscriptionPlanRepository.findByActiveTrue()).thenReturn(Optional.of(plan));
         SubscriptionEntity existing = SubscriptionEntity.builder()
                 .stripeCustomerId("cus_existing")
                 .status("past_due")
@@ -103,7 +98,7 @@ class SubscriptionManagerTest {
                 eq("http://localhost:4200/dashboard"), eq("http://localhost:4200/dashboard")))
                 .thenReturn("https://checkout.stripe.com/session_retry");
 
-        String url = subscriptionManager.startCheckout(user,
+        String url = subscriptionManager.startCheckout(user, plan,
                 "http://localhost:4200/dashboard", "http://localhost:4200/dashboard");
 
         assertEquals("https://checkout.stripe.com/session_retry", url);
@@ -114,7 +109,6 @@ class SubscriptionManagerTest {
     void startCheckout_userWithCanceledSubscription_shouldNotGrantTrialAgain() throws StripeException {
         // Un utilisateur qui a déjà annulé un abonnement a déjà consommé son essai :
         // pas de nouveau trial, même s'il repasse par un nouveau checkout.
-        when(subscriptionPlanRepository.findByActiveTrue()).thenReturn(Optional.of(plan));
         SubscriptionEntity canceled = SubscriptionEntity.builder()
                 .stripeCustomerId("cus_existing")
                 .status("canceled")
@@ -125,17 +119,9 @@ class SubscriptionManagerTest {
                 anyString(), anyString()))
                 .thenReturn("https://checkout.stripe.com/session_no_trial");
 
-        String url = subscriptionManager.startCheckout(user, "url", "url");
+        String url = subscriptionManager.startCheckout(user, plan, "url", "url");
 
         assertEquals("https://checkout.stripe.com/session_no_trial", url);
-    }
-
-    @Test
-    void startCheckout_noActivePlan_shouldThrowIllegalStateException() {
-        when(subscriptionPlanRepository.findByActiveTrue()).thenReturn(Optional.empty());
-
-        assertThrows(IllegalStateException.class,
-                () -> subscriptionManager.startCheckout(user, "url", "url"));
     }
 
     @Test

@@ -9,7 +9,6 @@ import com.bchev.notezen.domain.repository.UserEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import com.bchev.notezen.domain.model.PricingPlan;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -51,7 +50,6 @@ class GoogleReviewManagerTest {
     void getLocations_shouldResolveProviderAndFetchLocations() {
         // Given
         UserEntity user = createUser("user@example.com");
-        user.setPricingPlan(PricingPlan.PROFESSIONAL);
 
         when(googleAuthManager.getValidToken(user)).thenReturn("valid-token");
         when(businessProviderResolver.resolve(user)).thenReturn(mockProvider);
@@ -78,7 +76,6 @@ class GoogleReviewManagerTest {
     void getLocations_withStarterUser_shouldFilterTo1Location() {
         // Given
         UserEntity user = createUser("starter@example.com");
-        user.setPricingPlan(PricingPlan.STARTER);
 
         when(googleAuthManager.getValidToken(user)).thenReturn("token");
         when(businessProviderResolver.resolve(user)).thenReturn(realProvider);

@@ -21,6 +21,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -44,15 +45,23 @@ public class BillingController {
     private String frontUrl;
 
     /**
-     * Crée une session Stripe Checkout hébergée. L'utilisateur y saisit sa carte ;
-     * aucune SubscriptionEntity n'est créée ici, elle ne l'est que lorsque le webhook
+     * Plans disponibles à la souscription, affichés sur la page pricing.
+     */
+    @GetMapping("/plans")
+    public ResponseEntity<List<SubscriptionPlanEntity>> getPlans() {
+        return ResponseEntity.ok(subscriptionPlanRepository.findByActiveTrueOrderByPriceAsc());
+    }
+
+    /**
+     * Crée une session Stripe Checkout hébergée pour le plan choisi. L'utilisateur y saisit
+     * sa carte ; aucune SubscriptionEntity n'est créée ici, elle ne l'est que lorsque le webhook
      * checkout.session.completed confirme que le paiement a été configuré côté Stripe.
      * Point d'entrée pour un utilisateur déjà connecté qui relance un paiement
      * (ex: depuis /unauthorized après un 401) ; le flow principal passe par
      * GoogleBusinessController qui appelle directement SubscriptionManager.startCheckout.
      */
     @PostMapping("/checkout")
-    public ResponseEntity<?> checkout(@RequestHeader("Authorization") String jwt) {
+    public ResponseEntity<?> checkout(@RequestHeader("Authorization") String jwt, @RequestBody CheckoutRequest request) {
         try {
             Long userId = TokenUtils.getUserIdFrom(jwt);
             Optional<UserEntity> user = userRepository.findById(userId);
@@ -65,22 +74,37 @@ public class BillingController {
                 return ResponseEntity.ok(Map.of("message", "User already has an active subscription"));
             }
 
+            Optional<SubscriptionPlanEntity> plan = subscriptionPlanRepository.findById(request.getPlanId());
+            if (plan.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "Plan introuvable"));
+            }
+
             String checkoutUrl = subscriptionManager.startCheckout(
                     user.get(),
+                    plan.get(),
                     frontUrl + "dashboard?token=" + jwt.replace("Bearer ", "").trim(),
                     frontUrl + "dashboard?token=" + jwt.replace("Bearer ", "").trim()
             );
 
             return ResponseEntity.ok(Map.of("checkoutUrl", checkoutUrl));
 
-        } catch (IllegalStateException e) {
-            log.error("Billing configuration error", e);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", e.getMessage()));
         } catch (StripeException e) {
             log.error("Stripe error during checkout", e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", "Stripe error: " + e.getMessage()));
+        }
+    }
+
+    public static class CheckoutRequest {
+        private Long planId;
+
+        public Long getPlanId() {
+            return planId;
+        }
+
+        public void setPlanId(Long planId) {
+            this.planId = planId;
         }
     }
 
@@ -217,14 +241,20 @@ public class BillingController {
 
         Long userId = Long.parseLong(clientReferenceId);
         Optional<UserEntity> user = userRepository.findById(userId);
-        Optional<SubscriptionPlanEntity> plan = subscriptionPlanRepository.findByActiveTrue();
-
-        if (user.isEmpty() || plan.isEmpty()) {
-            log.error("Cannot persist subscription {}: user {} or plan missing", stripeSubscriptionId, userId);
+        if (user.isEmpty()) {
+            log.error("Cannot persist subscription {}: user {} missing", stripeSubscriptionId, userId);
             return;
         }
 
         com.stripe.model.Subscription stripeSubscription = stripeService.getSubscription(stripeSubscriptionId);
+        String purchasedPriceId = stripeSubscription.getItems().getData().get(0).getPrice().getId();
+        Optional<SubscriptionPlanEntity> plan = subscriptionPlanRepository.findByStripePriceId(purchasedPriceId);
+
+        if (plan.isEmpty()) {
+            log.error("Cannot persist subscription {}: no plan matches Stripe price {}", stripeSubscriptionId, purchasedPriceId);
+            return;
+        }
+
         subscriptionManager.persistSubscriptionFromCheckout(
                 user.get(), plan.get(), stripeSubscription, stripeCustomerId);
     }

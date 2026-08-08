@@ -44,8 +44,7 @@ public class GoogleReviewManager {
 
     public List<Map<String, Object>> getLocations(UserEntity user, GoogleAuthManager googleAuthManager) {
         String token = googleAuthManager.getValidToken(user);
-        log.info("[GoogleReviewManager] Appel API Google pour lister les lieux de l'utilisateur {} (plan: {})",
-                user.getEmail(), user.getPricingPlan());
+        log.info("[GoogleReviewManager] Appel API Google pour lister les lieux de l'utilisateur {}", user.getEmail());
 
         List<Map<String, Object>> allLocations =
             businessProviderResolver.resolve(user).fetchLocations(user.getGoogleAccountId(), token);

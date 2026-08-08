@@ -1,6 +1,5 @@
 package com.bchev.notezen.domain.repository;
 
-import com.bchev.notezen.domain.model.PricingPlan;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -29,15 +28,4 @@ public class UserEntity {
     private LocalDateTime googleTokenExpiresAt;
 
     private LocalDateTime tokenExpiration;
-
-    @Enumerated(EnumType.STRING)
-    private PricingPlan pricingPlan = PricingPlan.STARTER;
-
-    private String stripeCustomerId;
-
-    private String stripeSubscriptionId;
-
-    private LocalDateTime subscriptionStartDate;
-
-    private LocalDateTime subscriptionEndDate;
 }

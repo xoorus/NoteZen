@@ -2,9 +2,11 @@ package com.bchev.notezen.application.controller;
 
 import com.bchev.notezen.application.web.google.GoogleAuthManager;
 import com.bchev.notezen.application.web.google.GoogleAuthService;
+import com.bchev.notezen.domain.entity.SubscriptionPlanEntity;
 import com.bchev.notezen.domain.exception.PaymentFailedException;
 import com.bchev.notezen.domain.exception.SubscriptionCanceledException;
 import com.bchev.notezen.domain.helpers.TokenUtils;
+import com.bchev.notezen.domain.repository.SubscriptionPlanRepository;
 import com.bchev.notezen.domain.repository.UserEntity;
 import com.bchev.notezen.domain.service.AccessControlService;
 import com.bchev.notezen.domain.service.SubscriptionManager;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @RestController
@@ -30,6 +33,7 @@ public class GoogleBusinessController {
     private final GoogleAuthService googleAuthService;
     private final AccessControlService accessControlService;
     private final SubscriptionManager subscriptionManager;
+    private final SubscriptionPlanRepository subscriptionPlanRepository;
 
     @Value("${spring.profiles.active:default}")
     private String activeProfile;
@@ -39,11 +43,15 @@ public class GoogleBusinessController {
 
     /**
      * Après un login Google réussi : compte existant/autorisé (allowlist ou
-     * abonnement actif) → dashboard, comme un login classique. Sinon → Checkout
-     * Stripe directement, sans page intermédiaire
+     * abonnement actif) → dashboard, comme un login classique. Sinon, si l'utilisateur
+     * a choisi un plan sur la page pricing avant de se connecter (transmis via le
+     * paramètre OAuth "state") → Checkout Stripe directement pour ce plan, sans page
+     * intermédiaire. Sans plan choisi (login direct), on renvoie vers le dashboard :
+     * le 401 sur les appels API l'enverra vers /unauthorized pour choisir un plan.
      */
     @GetMapping("/callback")
-    public void callback(@RequestParam String code, HttpServletResponse response) throws IOException {
+    public void callback(@RequestParam String code, @RequestParam(required = false) String state,
+                          HttpServletResponse response) throws IOException {
 
         log.info("callback");
         UserEntity user;
@@ -64,19 +72,29 @@ public class GoogleBusinessController {
             return;
         }
 
+        Optional<SubscriptionPlanEntity> plan = resolvePlan(state);
+        if (plan.isEmpty()) {
+            response.sendRedirect(dashboardUrl);
+            return;
+        }
+
         try {
-            // Succès et annulation renvoient tous les deux vers le dashboard : s'il
-            // n'est pas encore autorisé (paiement annulé, webhook pas encore arrivé),
-            // le 401 sur les appels API l'y renverra automatiquement vers /unauthorized.
-            String checkoutUrl = subscriptionManager.startCheckout(
-                    user,
-                    dashboardUrl,
-                    dashboardUrl
-            );
+            String checkoutUrl = subscriptionManager.startCheckout(user, plan.get(), dashboardUrl, dashboardUrl);
             response.sendRedirect(checkoutUrl);
         } catch (Exception e) {
             log.error("Impossible de démarrer le checkout Stripe pour {}: {}", user.getEmail(), e.getMessage());
             response.sendRedirect(frontUrl + "unauthorized?token=" + noteZenToken + "&email=" + user.getEmail());
+        }
+    }
+
+    private Optional<SubscriptionPlanEntity> resolvePlan(String state) {
+        if (state == null || state.isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            return subscriptionPlanRepository.findById(Long.valueOf(state));
+        } catch (NumberFormatException e) {
+            return Optional.empty();
         }
     }
 

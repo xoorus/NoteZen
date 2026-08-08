@@ -8,11 +8,14 @@ import com.bchev.notezen.domain.model.Review;
 import com.bchev.notezen.domain.model.ReviewPage;
 import com.bchev.notezen.domain.service.BusinessProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.query.common.TemporalUnit;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -35,9 +38,9 @@ public class MockBusinessService implements BusinessProvider {
     public List<Map<String, Object>> fetchLocations(String accountId, String accessToken) {
         log.info("fetchLocations");
         return List.of(
-                Map.of("name", accountId + "/locations/loc-paris", "title", "Le Petit Bistro - Paris"),
+                Map.of("name", accountId + "/locations/loc-merignac", "title", "Le Petit Bistro - Mérignac"),
                 Map.of("name", accountId + "/locations/loc-bordeaux", "title", "Le Petit Bistro - Bordeaux"),
-                Map.of("name", accountId + "/locations/loc-lyon", "title", "Le Petit Bistro - Lyon")
+                Map.of("name", accountId + "/locations/loc-pessac", "title", "Le Petit Bistro - Pessac")
         );
     }
 
@@ -49,39 +52,39 @@ public class MockBusinessService implements BusinessProvider {
                 .minusMonths(1)
                 .toInstant();
         Instant now = java.time.Instant.now();
-        
+
         List<ReviewDTO> reviewsDTO = new ArrayList<>();
-        reviewsDTO.add(createReviewWithReply("1", "Alice L.", "REPLY Excellent service, je recommande !", "FIVE", now,
+        reviewsDTO.add(createReviewWithReply("1", "Alice L.", "REPLY Excellent service, je recommande !", "FIVE", now.minus(1, ChronoUnit.DAYS),
                 "Merci beaucoup Alice ! Au plaisir de vous revoir."));
 
-        reviewsDTO.add(createReviewWithReply("2", "Marc A.", "REPLY Un peu bruyant mais très bon.", "FOUR", now,
+        reviewsDTO.add(createReviewWithReply("2", "Marc A.", "REPLY Un peu bruyant mais très bon.", "FOUR", now.minus(5, ChronoUnit.DAYS),
                 "Merci pour votre retour Marc, nous travaillons sur l'acoustique !"));
 
         reviewsDTO.add(createReviewWithReply("21", "Thomas P.", "REPLY ONE MONTH AGO Déçu par l'accueil.", "TWO", oneMonthAgo,
                 "Nous sommes navrés, Thomas. Nous avons renforcé l'équipe depuis."));
 
-        reviewsDTO.add(createReview("21", "Thomas P.", "ONE MONTH AGO Déçu par l'accueil.", "TWO", oneMonthAgo));
         reviewsDTO.add(createReview("22", "Jean Dupont", "ONE MONTH AGO Excellent accueil, je reviendrai !", "FIVE", oneMonthAgo));
         reviewsDTO.add(createReview("23", "Alice Martin", "ONE MONTH AGO Trop d'attente pour être servi...", "TWO", oneMonthAgo));
+        reviewsDTO.add(createReview("21", "Thomas P.", "ONE MONTH AGO Déçu par l'accueil.", "TWO", oneMonthAgo));
         reviewsDTO.add(createReview("24", "Julie Martin", "ONE MONTH AGO Super service 😊 je recommande !!", "FIVE", oneMonthAgo));
-        reviewsDTO.add(createReview("25", "Kevin L.", "ONE MONTH AGO Good experience overall. Staff was friendly and the place was clean 👍", "FOUR", oneMonthAgo));
-        reviewsDTO.add(createReview("4", "Samantha K.", "ONE MONTH AGO Amazing place!! Will definitely come back next time I'm in town 🔥", "FIVE", oneMonthAgo));
         reviewsDTO.add(createReview("5", "Lucie Bernard", "ONE MONTH AGO Très bon accueil, par contre un peu d'attente. Mais bon ça valait le coup quand même 🙂", "FOUR", oneMonthAgo));
-        reviewsDTO.add(createReview("6", "Tom R.", "ONE MONTH AGO Not bad. Nothing special but ok.", "THREE", oneMonthAgo));
         reviewsDTO.add(createReview("7", "Alexandre Petit", "ONE MONTH AGO Service nickel 👌 équipe sympa et pro.", "FIVE", oneMonthAgo));
-        reviewsDTO.add(createReview("8", "Sarah M.", "Honestly I expected more. The reviews were very good but my experience was just average.", "THREE", now));
-        reviewsDTO.add(createReview("9", "Jean-Claude", "Je suis venu avec ma famille dimanche. L'accueil était sympa mais on a attendu presque 30 minutes avant d'être servis... un peu long quand même. Après ça les produits étaient très bons donc je suis partagé 🤔", "THREE", now));
-        reviewsDTO.add(createReview("10", "Emily Watson", "Loved it! Great atmosphere, nice people and the service was super quick. Will come again for sure ❤️", "FIVE", now));
-        reviewsDTO.add(createReview("11", "Patrick Leroy", "Pas mal mais y avait une erreur dans ma commande 😅", "THREE", now));
-        reviewsDTO.add(createReview("12", "Lucas B.", "Franchement top ! Rien à dire. Qualité au rendez vous, personnel agréable, prix corrects 👍", "FIVE", now));
+        reviewsDTO.add(createReview("9", "Jean-Claude", "Je suis venu avec ma famille dimanche. L'accueil était sympa mais on a attendu presque 30 minutes avant d'être servis... un peu long quand même. Après ça les produits étaient très bons donc je suis partagé 🤔", "THREE", now.minus(4, ChronoUnit.DAYS)));
+        reviewsDTO.add(createReview("11", "Patrick Leroy", "Pas mal mais y avait une erreur dans ma commande 😅", "THREE", now.minus(2, ChronoUnit.DAYS)));
+        reviewsDTO.add(createReview("12", "Lucas B.", "Franchement top ! Rien à dire. Qualité au rendez vous, personnel agréable, prix corrects 👍", "FIVE", now.minus(5, ChronoUnit.DAYS)));
         reviewsDTO.add(createReview("13", "Nathan", "meh.", "TWO", now));
-        reviewsDTO.add(createReview("14", "Chloé R.", "Très bonne surprise !! je connaissais pas du tout et je reviendrai avec plaisir 😊", "FIVE", now));
-        reviewsDTO.add(createReview("15", "Oliver Scott", "Service was slow and nobody really seemed to care. Maybe it was just a bad day but still disappointing.", "TWO", now));
-        reviewsDTO.add(createReview("16", "Mélanie", "Bon endroit mais un peu bruillant 😅", "FOUR", now));
-        reviewsDTO.add(createReview("17", "David P.", "Really good experience. I went there with colleagues after work and everyone liked it. Food was great, service friendly, prices reasonable. The only small downside was the waiting time but honestly it wasn't a big deal.", "FOUR", now));
+        reviewsDTO.add(createReview("14", "Chloé R.", "Très bonne surprise !! je connaissais pas du tout et je reviendrai avec plaisir 😊", "FIVE", now.minus(4, ChronoUnit.DAYS)));
+        reviewsDTO.add(createReview("16", "Mélanie", "Bon endroit mais un peu bruillant 😅", "FOUR", now.minus(10, ChronoUnit.DAYS)));
         reviewsDTO.add(createReview("18", "Sophie Laurent", "Je mets 5⭐ parce que vraiment tout était parfait. L'accueil, l'ambiance, la qualité du service... ça fait plaisir de voir des endroits où les gens prennent encore le temps de bien faire les choses. Je recommande sans hésiter et je reviendrai avec des amis la prochaine fois.", "FIVE", now));
         reviewsDTO.add(createReview("19", "Mike", "ok 👍", "THREE", now));
         reviewsDTO.add(createReview("20", "Aurélien G.", "Très déçu 😕 on m'avait conseillé cet endroit mais je pense que je suis tombé un mauvais jour. Personnel un peu débordé et service lent.", "TWO", now));
+        reviewsDTO.add(createReview("21", "Sarah M.", "Honestly I expected more. The reviews were very good but my experience was just average.", "THREE", now.minus(7, ChronoUnit.DAYS)));
+        reviewsDTO.add(createReview("10", "Emily Watson", "Loved it! Great atmosphere, nice people and the service was super quick. Will come again for sure ❤️", "FIVE", now));
+        reviewsDTO.add(createReview("25", "Kevin L.", "ONE MONTH AGO Good experience overall. Staff was friendly and the place was clean 👍", "FOUR", oneMonthAgo));
+        reviewsDTO.add(createReview("4", "Samantha K.", "ONE MONTH AGO Amazing place!! Will definitely come back next time I'm in town 🔥", "FIVE", oneMonthAgo));
+        reviewsDTO.add(createReview("6", "Tom R.", "ONE MONTH AGO Not bad. Nothing special but ok.", "THREE", oneMonthAgo));
+        reviewsDTO.add(createReview("17", "David P.", "Really good experience. I went there with colleagues after work and everyone liked it. Food was great, service friendly, prices reasonable. The only small downside was the waiting time but honestly it wasn't a big deal.", "FOUR", now));
+        reviewsDTO.add(createReview("15", "Oliver Scott", "Service was slow and nobody really seemed to care. Maybe it was just a bad day but still disappointing.", "TWO", now.minus(3, ChronoUnit.DAYS)));
 
         log.info(reviewsDTO.size() + " avis trouvés");
         return new ReviewPage(reviewsDTO.stream().map(ReviewDTO::toReview).toList(), null);
