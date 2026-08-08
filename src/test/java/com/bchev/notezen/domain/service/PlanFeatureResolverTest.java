@@ -22,11 +22,14 @@ class PlanFeatureResolverTest {
     @Mock
     private SubscriptionManager subscriptionManager;
 
+    @Mock
+    private AccessControlService accessControlService;
+
     private PlanFeatureResolver resolver;
 
     @BeforeEach
     void setUp() {
-        resolver = new PlanFeatureResolver(subscriptionManager);
+        resolver = new PlanFeatureResolver(subscriptionManager, accessControlService);
     }
 
     private UserEntity createUser() {
@@ -44,6 +47,7 @@ class PlanFeatureResolverTest {
     @Test
     void getMaxLocations_starterUser_shouldReturn1() {
         UserEntity user = createUser();
+        when(accessControlService.isAllowlisted(user.getEmail())).thenReturn(false);
         when(subscriptionManager.getUserActiveSubscription(user)).thenReturn(Optional.of(subscriptionWithMaxLocations(1)));
 
         assertEquals(1, resolver.getMaxLocations(user));
@@ -52,6 +56,7 @@ class PlanFeatureResolverTest {
     @Test
     void getMaxLocations_professionalUser_shouldReturn999() {
         UserEntity user = createUser();
+        when(accessControlService.isAllowlisted(user.getEmail())).thenReturn(false);
         when(subscriptionManager.getUserActiveSubscription(user)).thenReturn(Optional.of(subscriptionWithMaxLocations(999)));
 
         assertEquals(999, resolver.getMaxLocations(user));
@@ -60,6 +65,7 @@ class PlanFeatureResolverTest {
     @Test
     void getMaxLocations_noSubscription_shouldReturnDefaultOf1() {
         UserEntity user = createUser();
+        when(accessControlService.isAllowlisted(user.getEmail())).thenReturn(false);
         when(subscriptionManager.getUserActiveSubscription(user)).thenReturn(Optional.empty());
 
         assertEquals(1, resolver.getMaxLocations(user));
@@ -71,8 +77,17 @@ class PlanFeatureResolverTest {
     }
 
     @Test
+    void getMaxLocations_allowlistedUser_shouldReturnUnlimitedWithoutSubscription() {
+        UserEntity user = createUser();
+        when(accessControlService.isAllowlisted(user.getEmail())).thenReturn(true);
+
+        assertEquals(999, resolver.getMaxLocations(user));
+    }
+
+    @Test
     void filterLocationsByPlan_starterUser_shouldLimit1Location() {
         UserEntity user = createUser();
+        when(accessControlService.isAllowlisted(user.getEmail())).thenReturn(false);
         when(subscriptionManager.getUserActiveSubscription(user)).thenReturn(Optional.of(subscriptionWithMaxLocations(1)));
         List<Map<String, Object>> locations = List.of(
                 Map.of("name", "loc-1", "title", "Location 1"),
@@ -89,7 +104,23 @@ class PlanFeatureResolverTest {
     @Test
     void filterLocationsByPlan_professionalUser_shouldReturnAllLocations() {
         UserEntity user = createUser();
+        when(accessControlService.isAllowlisted(user.getEmail())).thenReturn(false);
         when(subscriptionManager.getUserActiveSubscription(user)).thenReturn(Optional.of(subscriptionWithMaxLocations(999)));
+        List<Map<String, Object>> locations = List.of(
+                Map.of("name", "loc-1", "title", "Location 1"),
+                Map.of("name", "loc-2", "title", "Location 2"),
+                Map.of("name", "loc-3", "title", "Location 3")
+        );
+
+        List<Map<String, Object>> filtered = resolver.filterLocationsByPlan(user, locations);
+
+        assertEquals(3, filtered.size());
+    }
+
+    @Test
+    void filterLocationsByPlan_allowlistedUserWithoutSubscription_shouldReturnAllLocations() {
+        UserEntity user = createUser();
+        when(accessControlService.isAllowlisted(user.getEmail())).thenReturn(true);
         List<Map<String, Object>> locations = List.of(
                 Map.of("name", "loc-1", "title", "Location 1"),
                 Map.of("name", "loc-2", "title", "Location 2"),

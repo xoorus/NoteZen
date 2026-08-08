@@ -14,12 +14,17 @@ import java.util.Map;
 public class PlanFeatureResolver {
 
     private static final int DEFAULT_MAX_LOCATIONS = 1;
+    private static final int UNLIMITED_LOCATIONS = 999;
 
     private final SubscriptionManager subscriptionManager;
+    private final AccessControlService accessControlService;
 
     public int getMaxLocations(UserEntity user) {
         if (user == null) {
             return DEFAULT_MAX_LOCATIONS;
+        }
+        if (accessControlService.isAllowlisted(user.getEmail())) {
+            return UNLIMITED_LOCATIONS;
         }
         return subscriptionManager.getUserActiveSubscription(user)
                 .map(subscription -> subscription.getSubscriptionPlan().getMaxLocations())

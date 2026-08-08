@@ -25,11 +25,15 @@ public class AccessControlService {
             "vanillelina33@gmail.com"
     );
 
+    public boolean isAllowlisted(String email) {
+        return authorizedEmails.contains(email.toLowerCase());
+    }
+
     public boolean isAuthorized(String email) {
         String normalizedEmail = email.toLowerCase();
 
         // Allowlist toujours gratuit
-        if (authorizedEmails.contains(normalizedEmail)) {
+        if (isAllowlisted(normalizedEmail)) {
             log.debug("User {} authorized via allowlist", normalizedEmail);
             return true;
         }
