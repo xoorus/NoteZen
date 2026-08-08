@@ -53,9 +53,12 @@ jobs:
             api-key: "sk_test_dummy"
             webhook-secret: "whsec_dummy"
             pricing:
-              monthly:
-                stripePriceId: "price_dummy"
-                trialDays: 14
+              starter:
+                stripePriceId: "price_dummy_starter"
+                trialDays: 7
+              professional:
+                stripePriceId: "price_dummy_professional"
+                trialDays: 7
           front:
             url: "http://localhost:4200/"
           app:
