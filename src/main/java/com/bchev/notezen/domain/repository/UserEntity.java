@@ -28,4 +28,7 @@ public class UserEntity {
     private LocalDateTime googleTokenExpiresAt;
 
     private LocalDateTime tokenExpiration;
+
+    @Column(nullable = false)
+    private Integer repliesPostedCount = 0;
 }

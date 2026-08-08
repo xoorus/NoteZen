@@ -1,14 +1,9 @@
 package com.bchev.notezen.application.controller;
 
 import com.bchev.notezen.application.controller.dto.StarRatingDTO;
-import com.bchev.notezen.application.web.google.GoogleAuthManager;
 import com.bchev.notezen.domain.model.LightReview;
-import com.bchev.notezen.domain.model.Review;
 import com.bchev.notezen.domain.model.StarRating;
-import com.bchev.notezen.domain.repository.UserEntity;
-import com.bchev.notezen.domain.repository.UserRepository;
 import com.bchev.notezen.domain.service.AiService;
-import com.bchev.notezen.domain.service.ReviewManager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestTemplate;
@@ -60,4 +55,3 @@ public class AiController {
 
     public record SuggestionResponse(String text) {}
 }
-

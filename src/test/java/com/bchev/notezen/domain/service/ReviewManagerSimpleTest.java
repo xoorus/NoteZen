@@ -89,6 +89,35 @@ class ReviewManagerSimpleTest {
 
         // Then
         verify(googleReviewManager).replyToReview(user, locationId, reviewId, replyText, googleAuthManager);
+        assertEquals(1, user.getRepliesPostedCount());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void replyToReview_whenGoogleReviewManagerThrows_shouldNotIncrementCounter() throws UnauthorizedUserAccess {
+        // Given
+        Long userId = 1L;
+        String email = "test@example.com";
+        UserEntity user = new UserEntity();
+        user.setId(userId);
+        user.setEmail(email);
+        user.setGoogleAccountId("account-123");
+
+        String locationId = "location-123";
+        String reviewId = "review-123";
+        String replyText = "Thank you!";
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(accessControlService.isAuthorized(email)).thenReturn(true);
+        doThrow(new RuntimeException("Échec de la publication de la réponse Google"))
+                .when(googleReviewManager).replyToReview(user, locationId, reviewId, replyText, googleAuthManager);
+
+        // When & Then
+        assertThrows(RuntimeException.class,
+                () -> reviewManager.replyToReview(userId, locationId, reviewId, replyText, googleAuthManager));
+
+        assertEquals(0, user.getRepliesPostedCount());
+        verify(userRepository, never()).save(user);
     }
 
     @Test

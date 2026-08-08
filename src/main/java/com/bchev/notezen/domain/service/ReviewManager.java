@@ -44,6 +44,9 @@ public class ReviewManager {
 
         googleReviewManager.replyToReview(user, locationId, reviewId, text, googleAuthManager);
         log.info("[ReviewManager] Réponse transmise avec succès au GoogleReviewManager");
+
+        user.setRepliesPostedCount(user.getRepliesPostedCount() + 1);
+        userRepository.save(user);
     }
 
     public List<Map<String, Object>> getLocationsForUser(Long userId, GoogleAuthManager googleAuthManager) throws UnauthorizedUserAccess {
