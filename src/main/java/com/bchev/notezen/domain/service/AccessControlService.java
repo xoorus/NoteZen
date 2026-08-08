@@ -21,7 +21,8 @@ public class AccessControlService {
     private final List<String> authorizedEmails = List.of(
             "admin@notezen.fr",
             "dev@notezen.fr",
-            "bchevriaut@gmail.com"
+            "bchevriaut@gmail.com",
+            "vanillelina33@gmail.com"
     );
 
     public boolean isAuthorized(String email) {
