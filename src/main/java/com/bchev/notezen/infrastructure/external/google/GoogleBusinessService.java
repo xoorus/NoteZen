@@ -2,6 +2,7 @@ package com.bchev.notezen.infrastructure.external.google;
 
 import com.bchev.notezen.application.controller.dto.ListReviewsResponseDTO;
 import com.bchev.notezen.application.controller.dto.ReviewDTO;
+import com.bchev.notezen.domain.exception.GoogleScopeMissingException;
 import com.bchev.notezen.domain.model.Review;
 import com.bchev.notezen.domain.model.ReviewPage;
 import com.bchev.notezen.domain.service.BusinessProvider;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
@@ -32,8 +34,12 @@ public class GoogleBusinessService implements BusinessProvider {
         log.info("[GoogleBusinessService] Tentative de récupération de l'Account ID Google");
         String url = BUSINESS_INFO_BASE_URL + "/accounts";
 
-        ResponseEntity<Map> response = restTemplate.exchange(
-                url, HttpMethod.GET, createHttpEntity(accessToken), Map.class);
+        ResponseEntity<Map> response;
+        try {
+            response = restTemplate.exchange(url, HttpMethod.GET, createHttpEntity(accessToken), Map.class);
+        } catch (HttpClientErrorException.Forbidden e) {
+            throw missingScope(e);
+        }
 
         List<Map<String, Object>> accounts = (List<Map<String, Object>>) response.getBody().get("accounts");
 
@@ -53,8 +59,12 @@ public class GoogleBusinessService implements BusinessProvider {
 
         String url = buildReviewUrl(accountId, locationId, pageToken);
 
-        ResponseEntity<ListReviewsResponseDTO> response = restTemplate.exchange(
-                url, HttpMethod.GET, createHttpEntity(accessToken), ListReviewsResponseDTO.class);
+        ResponseEntity<ListReviewsResponseDTO> response;
+        try {
+            response = restTemplate.exchange(url, HttpMethod.GET, createHttpEntity(accessToken), ListReviewsResponseDTO.class);
+        } catch (HttpClientErrorException.Forbidden e) {
+            throw missingScope(e);
+        }
 
         ListReviewsResponseDTO body = response.getBody();
         return mapToReviewPage(body);
@@ -72,6 +82,8 @@ public class GoogleBusinessService implements BusinessProvider {
         try {
             restTemplate.exchange(url, HttpMethod.PUT, entity, Void.class);
             log.info("[GoogleBusinessService] Réponse publiée avec succès sur Google.");
+        } catch (HttpClientErrorException.Forbidden e) {
+            throw missingScope(e);
         } catch (Exception e) {
             log.error("[GoogleBusinessService] Erreur lors de la publication de la réponse : {}", e.getMessage());
             throw new RuntimeException("Échec de la publication de la réponse Google", e);
@@ -83,12 +95,22 @@ public class GoogleBusinessService implements BusinessProvider {
         log.info("[GoogleBusinessService] Récupération des établissements pour le compte: {}", accountId);
         String url = String.format("%s/%s/locations?readMask=name,title,storeCode", BUSINESS_INFO_BASE_URL, accountId);
 
-        ResponseEntity<Map> response = restTemplate.exchange(
-                url, HttpMethod.GET, createHttpEntity(accessToken), Map.class);
+        ResponseEntity<Map> response;
+        try {
+            response = restTemplate.exchange(url, HttpMethod.GET, createHttpEntity(accessToken), Map.class);
+        } catch (HttpClientErrorException.Forbidden e) {
+            throw missingScope(e);
+        }
 
         List<Map<String, Object>> locations = (List<Map<String, Object>>) response.getBody().get("locations");
         log.info("[GoogleBusinessService] {} lieux récupérés.", locations != null ? locations.size() : 0);
         return locations != null ? locations : List.of();
+    }
+
+    private GoogleScopeMissingException missingScope(HttpClientErrorException.Forbidden e) {
+        log.warn("[GoogleBusinessService] Accès refusé par Google (403) : permission business.manage probablement non accordée.");
+        return new GoogleScopeMissingException(
+                "L'accès à Google Business Profile n'a pas été autorisé lors de la connexion.", e);
     }
 
     private String buildReviewUrl(String accountId, String locationId, String pageToken) {

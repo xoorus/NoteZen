@@ -1,5 +1,6 @@
 package com.bchev.notezen.application.controller;
 
+import com.bchev.notezen.domain.exception.GoogleScopeMissingException;
 import com.bchev.notezen.domain.exception.PaymentFailedException;
 import com.bchev.notezen.domain.exception.SubscriptionCanceledException;
 import com.bchev.notezen.domain.exception.UnauthorizedUserAccess;
@@ -38,5 +39,18 @@ public class ApiExceptionHandler {
         log.warn("[Security] Accès refusé : {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(Map.of("error", "Accès non autorisé, abonnement requis"));
+    }
+
+    /**
+     * Cas distinct du 403 générique ci-dessus : token et abonnement valides, mais
+     * l'utilisateur n'a pas coché la permission Google Business Profile au login.
+     * Le frontend doit détecter "google_scope_missing" pour rediriger vers une page
+     * dédiée plutôt que vers /unauthorized (qui parle d'abonnement, pas de permission Google).
+     */
+    @ExceptionHandler(GoogleScopeMissingException.class)
+    public ResponseEntity<?> handleGoogleScopeMissing(GoogleScopeMissingException e) {
+        log.warn("[Security] Permission Google Business Profile manquante : {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("error", "google_scope_missing"));
     }
 }

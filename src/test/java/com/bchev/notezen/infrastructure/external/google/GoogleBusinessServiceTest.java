@@ -4,14 +4,18 @@ import com.bchev.notezen.application.controller.dto.ListReviewsResponseDTO;
 import com.bchev.notezen.application.controller.dto.ReviewDTO;
 import com.bchev.notezen.application.controller.dto.ReviewerDTO;
 import com.bchev.notezen.application.controller.dto.StarRatingDTO;
+import com.bchev.notezen.domain.exception.GoogleScopeMissingException;
 import com.bchev.notezen.domain.model.ReviewPage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -165,5 +169,48 @@ class GoogleBusinessServiceTest {
                 () -> service.postReply("accounts/123", "loc-1", "review-1", "Merci !", "token-abc"));
 
         assertEquals("Échec de la publication de la réponse Google", ex.getMessage());
+    }
+
+    private static HttpClientErrorException.Forbidden forbidden() {
+        return (HttpClientErrorException.Forbidden) HttpClientErrorException.create(
+                HttpStatus.FORBIDDEN, "Forbidden", HttpHeaders.EMPTY, new byte[0], null);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void fetchAccountId_onForbidden_shouldThrowGoogleScopeMissingException() {
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(Map.class)))
+                .thenThrow(forbidden());
+
+        assertThrows(GoogleScopeMissingException.class, () -> service.fetchAccountId("token-abc"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void fetchLocations_onForbidden_shouldThrowGoogleScopeMissingException() {
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(Map.class)))
+                .thenThrow(forbidden());
+
+        assertThrows(GoogleScopeMissingException.class, () -> service.fetchLocations("accounts/123", "token-abc"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void fetchReviews_onForbidden_shouldThrowGoogleScopeMissingException() {
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class),
+                eq(ListReviewsResponseDTO.class)))
+                .thenThrow(forbidden());
+
+        assertThrows(GoogleScopeMissingException.class,
+                () -> service.fetchReviews("accounts/123", "loc-1", "token-abc", null));
+    }
+
+    @Test
+    void postReply_onForbidden_shouldThrowGoogleScopeMissingException() {
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.PUT), any(HttpEntity.class), eq(Void.class)))
+                .thenThrow(forbidden());
+
+        assertThrows(GoogleScopeMissingException.class,
+                () -> service.postReply("accounts/123", "loc-1", "review-1", "Merci !", "token-abc"));
     }
 }
