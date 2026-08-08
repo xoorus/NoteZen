@@ -10,5 +10,6 @@ import java.util.Optional;
 public interface SubscriptionPlanRepository extends JpaRepository<SubscriptionPlanEntity, Long> {
     Optional<SubscriptionPlanEntity> findByStripePriceId(String stripePriceId);
     Optional<SubscriptionPlanEntity> findByStripeProductId(String stripeProductId);
+    Optional<SubscriptionPlanEntity> findByName(String name);
     List<SubscriptionPlanEntity> findByActiveTrueOrderByPriceAsc();
 }
