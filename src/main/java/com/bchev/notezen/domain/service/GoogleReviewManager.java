@@ -30,10 +30,7 @@ public class GoogleReviewManager {
 
         List<Review> allReviews = fetchAllReviewsWithinTimeframe(user, locationId, validToken, thresholdDate);
 
-        List<Review> filteredReviews = filterUnrepliedReviews(allReviews, thresholdDate);
-
-        log.info("[GoogleReviewManager] Fin de traitement. {} avis retenus (sans réponse, < 14 jours)", filteredReviews.size());
-        return filteredReviews;
+        return filterUnrepliedReviews(allReviews, thresholdDate);
     }
 
     public void replyToReview(UserEntity user, String locationId, String reviewId, String text, GoogleAuthManager googleAuthManager) {
@@ -93,9 +90,20 @@ public class GoogleReviewManager {
     }
 
     private List<Review> filterUnrepliedReviews(List<Review> reviews, Instant thresholdDate) {
-        return reviews.stream()
+        List<Review> recent = reviews.stream()
                 .filter(r -> Instant.parse(r.getCreateTime()).isAfter(thresholdDate))
+                .toList();
+
+        List<Review> unreplied = recent.stream()
                 .filter(r -> r.getReviewReply() == null)
                 .toList();
+
+        int tooOldCount = reviews.size() - recent.size();
+        int alreadyRepliedCount = recent.size() - unreplied.size();
+
+        log.info("[GoogleReviewManager] {} avis collectés au total, {} affichés ({} trop anciens, {} déjà répondus)",
+                reviews.size(), unreplied.size(), tooOldCount, alreadyRepliedCount);
+
+        return unreplied;
     }
 }
